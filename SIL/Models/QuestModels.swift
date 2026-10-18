@@ -1,0 +1,1159 @@
+//
+//  QuestModels.swift
+//  SIL
+//
+//  [SYSTEM]: Quest data structures initialized.
+//  Your missions await, Hunter.
+//
+
+import Foundation
+import SwiftUI
+
+// MARK: - Numeric Safety
+
+private func finiteOrZero(_ value: Double) -> Double {
+    value.isFinite ? value : 0
+}
+
+private func clampedUnitProgress(_ value: Double) -> Double {
+    min(1.0, max(0.0, finiteOrZero(value)))
+}
+
+// MARK: - Quest Type
+
+/// The three pillars of the quest system
+enum QuestType: String, Codable, CaseIterable {
+    case daily = "Daily Quest"
+    case boss = "Boss Fight"
+    case dungeon = "Dungeon"
+
+    var icon: String {
+        switch self {
+        case .daily: return "list.bullet.rectangle"
+        case .boss: return "bolt.shield.fill"
+        case .dungeon: return "door.left.hand.closed"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .daily: return "The Preparation to Become Powerful"
+        case .boss: return "Defeat the monster blocking your path"
+        case .dungeon: return "Enter the realm of deep focus"
+        }
+    }
+}
+
+// MARK: - Quest Status
+
+enum QuestStatus: String, Codable {
+    case available = "Available"
+    case inProgress = "In Progress"
+    case completed = "Completed"
+    case failed = "Failed"
+    case expired = "Expired"
+}
+
+// MARK: - Quest Tracking Type
+
+/// How the quest progress is tracked
+enum QuestTrackingType: String, Codable {
+    case manual           // User manually marks complete
+    case healthKit        // Auto-tracked via HealthKit
+    case location         // Auto-tracked via Core Location
+    case timer            // Tracked by in-app timer (dungeons)
+
+    var icon: String {
+        switch self {
+        case .manual: return "hand.tap"
+        case .healthKit: return "heart.fill"
+        case .location: return "location.fill"
+        case .timer: return "timer"
+        }
+    }
+
+    var isAutomatic: Bool {
+        self != .manual
+    }
+
+    static var betaSelectableTypes: [QuestTrackingType] {
+        return [.manual, .healthKit, .location]
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = QuestTrackingType(rawValue: rawValue) ?? .manual
+    }
+}
+
+// MARK: - Quest Frequency
+
+/// How often a quest should reset and become available again.
+enum QuestFrequency: String, Codable, CaseIterable, Identifiable {
+    case hourly = "Hourly"
+    case daily = "Daily"
+    case semiWeekly = "Semi-Weekly"
+    case weekly = "Weekly"
+    case monthly = "Monthly"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .hourly: return "clock"
+        case .daily: return "sun.max"
+        case .semiWeekly: return "calendar.badge.clock"
+        case .weekly: return "calendar"
+        case .monthly: return "calendar.circle"
+        }
+    }
+
+    func nextResetDate(from date: Date, calendar: Calendar = .current) -> Date {
+        switch self {
+        case .hourly:
+            let currentHour = calendar.dateInterval(of: .hour, for: date)?.start ?? date
+            return calendar.date(byAdding: .hour, value: 1, to: currentHour) ?? date.addingTimeInterval(3600)
+        case .daily:
+            let startOfDay = calendar.startOfDay(for: date)
+            return calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? date.addingTimeInterval(86400)
+        case .semiWeekly:
+            let startOfDay = calendar.startOfDay(for: date)
+            return calendar.date(byAdding: .day, value: 3, to: startOfDay) ?? date.addingTimeInterval(3 * 86400)
+        case .weekly:
+            let startOfDay = calendar.startOfDay(for: date)
+            return calendar.date(byAdding: .day, value: 7, to: startOfDay) ?? date.addingTimeInterval(7 * 86400)
+        case .monthly:
+            let startOfDay = calendar.startOfDay(for: date)
+            return calendar.date(byAdding: .month, value: 1, to: startOfDay) ?? date.addingTimeInterval(30 * 86400)
+        }
+    }
+}
+
+// MARK: - Dynamic Boss Goals
+
+/// Cadence for dynamic goal contribution targets.
+enum GoalCadence: String, Codable, CaseIterable, Identifiable {
+    case daily = "Daily"
+    case weekly = "Weekly"
+    case monthly = "Monthly"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .daily: return "sun.max"
+        case .weekly: return "calendar"
+        case .monthly: return "calendar.circle"
+        }
+    }
+
+    var questFrequency: QuestFrequency {
+        switch self {
+        case .daily: return .daily
+        case .weekly: return .weekly
+        case .monthly: return .monthly
+        }
+    }
+}
+
+enum DynamicBossGoalType: String, Codable, CaseIterable, Identifiable {
+    case weight = "Weight Goal"
+    case bodyFat = "Body Fat Goal"
+    case savings = "Savings Goal"
+    case stepCount = "Step Goal"
+    case sleepConsistency = "Sleep Goal"
+    case hydration = "Hydration Goal"
+    case mindfulness = "Mindfulness Goal"
+    case distance = "Distance Goal"
+    case workoutConsistency = "Workout Consistency"
+
+    var id: String { rawValue }
+
+    var displayName: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .weight: return "scalemass.fill"
+        case .bodyFat: return "figure.core.training"
+        case .savings: return "banknote.fill"
+        case .stepCount: return "figure.walk"
+        case .sleepConsistency: return "bed.double.fill"
+        case .hydration: return "drop.fill"
+        case .mindfulness: return "brain.head.profile"
+        case .distance: return "figure.run.circle"
+        case .workoutConsistency: return "figure.run"
+        }
+    }
+
+    var shortDescription: String {
+        switch self {
+        case .weight:
+            return "Cut, bulk, or hold a target bodyweight."
+        case .bodyFat:
+            return "Reduce body-fat percentage over time."
+        case .savings:
+            return "Build toward a money target deposit by deposit."
+        case .stepCount:
+            return "Accumulate daily or weekly steps from Health."
+        case .sleepConsistency:
+            return "Lock in a target number of hours slept."
+        case .hydration:
+            return "Hit a hydration target from logged water intake."
+        case .mindfulness:
+            return "Build a meditation or breathing habit."
+        case .distance:
+            return "Walk or run toward a distance milestone."
+        case .workoutConsistency:
+            return "Complete a set number of workouts each cadence."
+        }
+    }
+
+    var defaultStatTargets: [StatType] {
+        switch self {
+        case .weight: return [.vitality, .strength]
+        case .bodyFat: return [.vitality, .willpower]
+        case .savings: return [.intelligence, .willpower]
+        case .stepCount: return [.vitality, .agility]
+        case .sleepConsistency: return [.vitality, .spirit]
+        case .hydration: return [.vitality, .willpower]
+        case .mindfulness: return [.spirit, .willpower]
+        case .distance: return [.agility, .vitality]
+        case .workoutConsistency: return [.strength, .vitality, .willpower]
+        }
+    }
+
+    var unitLabel: String {
+        switch self {
+        case .weight: return "lb"
+        case .bodyFat: return "%"
+        case .savings: return "$"
+        case .stepCount: return "steps"
+        case .sleepConsistency: return "hours"
+        case .hydration: return "glasses"
+        case .mindfulness: return "minutes"
+        case .distance: return "km"
+        case .workoutConsistency: return "workouts"
+        }
+    }
+
+    var isHealthKitDriven: Bool {
+        switch self {
+        case .weight, .bodyFat, .stepCount, .sleepConsistency, .hydration, .mindfulness, .distance, .workoutConsistency:
+            return true
+        case .savings:
+            return false
+        }
+    }
+
+    /// Goal types the user can pick from when creating a new dynamic boss.
+    /// `.bodyFat` is intentionally hidden — existing bosses targeting it
+    /// continue to work, but it's no longer offered to new bosses.
+    static var betaSelectableTypes: [DynamicBossGoalType] {
+        allCases.filter { $0 != .bodyFat }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = DynamicBossGoalType(rawValue: rawValue) ?? .mindfulness
+    }
+}
+
+struct DynamicBossGoal: Codable {
+    var type: DynamicBossGoalType
+    var startValue: Double
+    var targetValue: Double
+    var currentValue: Double
+    var cadence: GoalCadence
+    var perCadenceTarget: Double
+    var generatedQuestID: UUID?
+    var lastUpdatedAt: Date?
+
+    var unitLabel: String { type.unitLabel }
+
+    var totalGoalAmount: Double {
+        abs(finiteOrZero(targetValue) - finiteOrZero(startValue))
+    }
+
+    /// Generic normalized goal progress for increasing or decreasing goals.
+    var normalizedProgress: Double {
+        let start = finiteOrZero(startValue)
+        let target = finiteOrZero(targetValue)
+        let current = finiteOrZero(currentValue)
+        let delta = target - start
+        guard abs(delta) > 0.000_001 else {
+            return current == target ? 1 : 0
+        }
+        return clampedUnitProgress((current - start) / delta)
+    }
+
+    var remainingAmount: Double {
+        let target = finiteOrZero(targetValue)
+        let start = finiteOrZero(startValue)
+        let current = finiteOrZero(currentValue)
+        let raw = target - current
+        // Match directionality (decreasing goals report positive remaining amount).
+        if target < start {
+            return max(0, current - target)
+        }
+        return max(0, raw)
+    }
+}
+
+// MARK: - Base Quest Protocol
+
+protocol QuestProtocol: Identifiable, Codable {
+    var id: UUID { get }
+    var title: String { get }
+    var description: String { get }
+    var questType: QuestType { get }
+    var difficulty: QuestDifficulty { get }
+    var status: QuestStatus { get set }
+    var targetStats: [StatType] { get }
+    var xpReward: Int { get }
+    var goldReward: Int { get }
+    var createdAt: Date { get }
+}
+
+// MARK: - Daily Quest
+
+struct QuestSubtask: Codable, Identifiable, Equatable {
+    let id: UUID
+    var title: String
+    var isCompleted: Bool
+    let createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        isCompleted: Bool = false,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.title = title
+        self.isCompleted = isCompleted
+        self.createdAt = createdAt
+    }
+}
+
+/// Daily Quests - "The Preparation to Become Powerful"
+/// Following the "Insultingly Low Bar" philosophy
+struct DailyQuest: QuestProtocol {
+    let id: UUID
+    let title: String
+    let description: String
+    var questType: QuestType = .daily
+    let difficulty: QuestDifficulty
+    var status: QuestStatus
+    let targetStats: [StatType]
+    let xpReward: Int
+    let goldReward: Int
+    let createdAt: Date
+
+    // Daily Quest Specific
+    var frequency: QuestFrequency?
+    var isOptional: Bool
+    let trackingType: QuestTrackingType
+    var currentProgress: Double  // 0.0 to 1.0
+    var targetValue: Double      // Target for completion
+    let unit: String             // "pushups", "steps", "minutes", etc.
+    var expiresAt: Date          // Next time the quest should reset
+
+    // Auto-tracking metadata
+    var healthKitIdentifier: String?
+    var locationCoordinate: LocationCoordinate?
+    var locationAddress: String?
+    var linkedBossID: UUID?
+    var linkedDynamicBossID: UUID?
+    var reminderEnabled: Bool
+    var reminderTime: Date?
+    var subtasks: [QuestSubtask]
+
+    var isExpired: Bool {
+        Date() > expiresAt
+    }
+
+    var resolvedFrequency: QuestFrequency {
+        frequency ?? .daily
+    }
+
+    var progressPercentage: Int {
+        Int(clampedUnitProgress(currentProgress) * 100)
+    }
+
+    var hasSubtasks: Bool {
+        !subtasks.isEmpty
+    }
+
+    var completedSubtaskCount: Int {
+        subtasks.filter(\.isCompleted).count
+    }
+
+    var subtaskProgress: Double {
+        guard hasSubtasks else { return 0 }
+        return clampedUnitProgress(Double(completedSubtaskCount) / Double(subtasks.count))
+    }
+
+    var displayProgress: String {
+        if hasSubtasks {
+            return "\(completedSubtaskCount)/\(subtasks.count) subtasks"
+        }
+
+        let safeProgress = clampedUnitProgress(currentProgress)
+        let safeTarget = max(0, finiteOrZero(targetValue))
+        let current = Int(safeProgress * safeTarget)
+        let target = Int(safeTarget)
+        return "\(current)/\(target) \(unit)"
+    }
+
+    /// Metric goals are quests where incremental progress makes sense to render.
+    var isMetricGoal: Bool {
+        hasSubtasks || trackingType.isAutomatic || targetValue > 1
+    }
+
+    /// UI-safe normalized progress value for inline bars.
+    var normalizedProgress: Double {
+        if status == .completed { return 1.0 }
+        if hasSubtasks { return subtaskProgress }
+        return clampedUnitProgress(currentProgress)
+    }
+
+    func subtaskXPReward(at index: Int) -> Int {
+        distributedReward(total: xpReward, index: index, count: subtasks.count)
+    }
+
+    func subtaskGoldReward(at index: Int) -> Int {
+        distributedReward(total: isOptional ? 0 : goldReward, index: index, count: subtasks.count)
+    }
+
+    func subtaskStatXPReward(at index: Int) -> Int {
+        distributedReward(total: GameFormulas.statXP(difficulty: difficulty), index: index, count: subtasks.count)
+    }
+
+    private func distributedReward(total: Int, index: Int, count: Int) -> Int {
+        guard total > 0, count > 0, index >= 0, index < count else { return 0 }
+        let base = total / count
+        let remainder = total % count
+        return base + (index < remainder ? 1 : 0)
+    }
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        description: String,
+        difficulty: QuestDifficulty = .easy,
+        status: QuestStatus = .available,
+        targetStats: [StatType],
+        frequency: QuestFrequency? = nil,
+        isOptional: Bool = false,
+        trackingType: QuestTrackingType = .manual,
+        currentProgress: Double = 0.0,
+        targetValue: Double = 1.0,
+        unit: String = "times",
+        createdAt: Date = Date(),
+        expiresAt: Date? = nil,
+        healthKitIdentifier: String? = nil,
+        locationCoordinate: LocationCoordinate? = nil,
+        locationAddress: String? = nil,
+        linkedBossID: UUID? = nil,
+        linkedDynamicBossID: UUID? = nil,
+        reminderEnabled: Bool = false,
+        reminderTime: Date? = nil,
+        subtasks: [QuestSubtask] = []
+    ) {
+        self.id = id
+        self.title = title
+        self.description = description
+        self.difficulty = difficulty
+        self.status = status
+        self.targetStats = targetStats
+        self.xpReward = GameFormulas.questXP(difficulty: difficulty)
+        self.goldReward = GameFormulas.questGold(difficulty: difficulty)
+        self.createdAt = createdAt
+
+        self.frequency = frequency
+        self.isOptional = isOptional
+        self.trackingType = trackingType
+        self.currentProgress = clampedUnitProgress(currentProgress)
+        self.targetValue = finiteOrZero(targetValue)
+        self.unit = unit
+
+        // Set expiry by quest frequency (defaults to daily for legacy quests)
+        self.expiresAt = expiresAt ?? (frequency ?? .daily).nextResetDate(from: createdAt)
+
+        self.healthKitIdentifier = healthKitIdentifier
+        self.locationCoordinate = locationCoordinate
+        self.locationAddress = locationAddress
+        self.linkedBossID = linkedBossID
+        self.linkedDynamicBossID = linkedDynamicBossID
+        self.reminderEnabled = reminderEnabled
+        self.reminderTime = reminderTime
+        self.subtasks = subtasks
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case description
+        case questType
+        case difficulty
+        case status
+        case targetStats
+        case xpReward
+        case goldReward
+        case createdAt
+        case frequency
+        case isOptional
+        case trackingType
+        case currentProgress
+        case targetValue
+        case unit
+        case expiresAt
+        case healthKitIdentifier
+        case locationCoordinate
+        case locationAddress
+        case linkedBossID
+        case linkedDynamicBossID
+        case reminderEnabled
+        case reminderTime
+        case subtasks
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        description = try container.decode(String.self, forKey: .description)
+        questType = try container.decodeIfPresent(QuestType.self, forKey: .questType) ?? .daily
+        difficulty = try container.decode(QuestDifficulty.self, forKey: .difficulty)
+        status = try container.decodeIfPresent(QuestStatus.self, forKey: .status) ?? .available
+        targetStats = try container.decodeIfPresent([StatType].self, forKey: .targetStats) ?? []
+        xpReward = try container.decodeIfPresent(Int.self, forKey: .xpReward) ?? GameFormulas.questXP(difficulty: difficulty)
+        goldReward = try container.decodeIfPresent(Int.self, forKey: .goldReward) ?? GameFormulas.questGold(difficulty: difficulty)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+
+        frequency = try container.decodeIfPresent(QuestFrequency.self, forKey: .frequency)
+        isOptional = try container.decodeIfPresent(Bool.self, forKey: .isOptional) ?? false
+        trackingType = try container.decodeIfPresent(QuestTrackingType.self, forKey: .trackingType) ?? .manual
+        currentProgress = clampedUnitProgress(try container.decodeIfPresent(Double.self, forKey: .currentProgress) ?? 0)
+        targetValue = finiteOrZero(try container.decodeIfPresent(Double.self, forKey: .targetValue) ?? 1)
+        unit = try container.decodeIfPresent(String.self, forKey: .unit) ?? "times"
+
+        expiresAt = try container.decodeIfPresent(Date.self, forKey: .expiresAt)
+            ?? (frequency ?? .daily).nextResetDate(from: createdAt)
+
+        healthKitIdentifier = try container.decodeIfPresent(String.self, forKey: .healthKitIdentifier)
+        locationCoordinate = try container.decodeIfPresent(LocationCoordinate.self, forKey: .locationCoordinate)
+        locationAddress = try container.decodeIfPresent(String.self, forKey: .locationAddress)
+        linkedBossID = try container.decodeIfPresent(UUID.self, forKey: .linkedBossID)
+        linkedDynamicBossID = try container.decodeIfPresent(UUID.self, forKey: .linkedDynamicBossID)
+        reminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .reminderEnabled) ?? false
+        reminderTime = try container.decodeIfPresent(Date.self, forKey: .reminderTime)
+        subtasks = try container.decodeIfPresent([QuestSubtask].self, forKey: .subtasks) ?? []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(description, forKey: .description)
+        try container.encode(questType, forKey: .questType)
+        try container.encode(difficulty, forKey: .difficulty)
+        try container.encode(status, forKey: .status)
+        try container.encode(targetStats, forKey: .targetStats)
+        try container.encode(xpReward, forKey: .xpReward)
+        try container.encode(goldReward, forKey: .goldReward)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(frequency, forKey: .frequency)
+        try container.encode(isOptional, forKey: .isOptional)
+        try container.encode(trackingType, forKey: .trackingType)
+        try container.encode(currentProgress, forKey: .currentProgress)
+        try container.encode(targetValue, forKey: .targetValue)
+        try container.encode(unit, forKey: .unit)
+        try container.encode(expiresAt, forKey: .expiresAt)
+        try container.encodeIfPresent(healthKitIdentifier, forKey: .healthKitIdentifier)
+        try container.encodeIfPresent(locationCoordinate, forKey: .locationCoordinate)
+        try container.encodeIfPresent(locationAddress, forKey: .locationAddress)
+        try container.encodeIfPresent(linkedBossID, forKey: .linkedBossID)
+        try container.encodeIfPresent(linkedDynamicBossID, forKey: .linkedDynamicBossID)
+        try container.encode(reminderEnabled, forKey: .reminderEnabled)
+        try container.encodeIfPresent(reminderTime, forKey: .reminderTime)
+        try container.encode(subtasks, forKey: .subtasks)
+    }
+}
+
+// MARK: - Location Coordinate (for geo-fencing)
+
+struct LocationCoordinate: Codable {
+    let latitude: Double
+    let longitude: Double
+    let radius: Double // in meters
+    let locationName: String
+}
+
+// MARK: - Boss Fight (Project)
+
+/// Boss Fights - Large goals with massive HP bars
+/// Users deal "damage" by completing micro-tasks
+struct BossFight: QuestProtocol {
+    let id: UUID
+    let title: String        // "The Dragon of Procrastination"
+    let description: String  // "Write your book"
+    var questType: QuestType = .boss
+    let difficulty: QuestDifficulty
+    var status: QuestStatus
+    let targetStats: [StatType]
+    let xpReward: Int
+    let goldReward: Int
+    let createdAt: Date
+
+    // Boss Specific
+    let maxHP: Int
+    var currentHP: Int
+    var microTasks: [MicroTask]
+    var linkedQuestIDs: [UUID] = []
+    var dynamicGoal: DynamicBossGoal?
+    let deadline: Date?
+    var lastDamageDealt: Int
+    var totalDamageDealt: Int
+
+    var hpPercentage: Double {
+        guard maxHP > 0 else { return 0 }
+        return clampedUnitProgress(Double(max(0, currentHP)) / Double(maxHP))
+    }
+
+    var isDefeated: Bool {
+        currentHP <= 0
+    }
+
+    var remainingHP: Int {
+        max(0, currentHP)
+    }
+
+    var damageDealtPercentage: Double {
+        1.0 - hpPercentage
+    }
+
+    init(
+        title: String,
+        description: String,
+        difficulty: QuestDifficulty = .hard,
+        targetStats: [StatType],
+        maxHP: Int = 10000,
+        linkedQuestIDs: [UUID] = [],
+        dynamicGoal: DynamicBossGoal? = nil,
+        deadline: Date? = nil
+    ) {
+        self.id = UUID()
+        self.title = title
+        self.description = description
+        self.difficulty = difficulty
+        self.status = .available
+        self.targetStats = targetStats
+        self.xpReward = GameFormulas.questXP(difficulty: difficulty) * 10 // Boss rewards are 10x
+        self.goldReward = GameFormulas.questGold(difficulty: difficulty) * 10
+        self.createdAt = Date()
+
+        self.maxHP = maxHP
+        self.currentHP = maxHP
+        self.microTasks = []
+        self.linkedQuestIDs = linkedQuestIDs
+        self.dynamicGoal = dynamicGoal
+        self.deadline = deadline
+        self.lastDamageDealt = 0
+        self.totalDamageDealt = 0
+
+        if let dynamicGoal {
+            // Dynamic bosses derive HP from current metric progress.
+            let hp = Int((1.0 - dynamicGoal.normalizedProgress) * Double(maxHP))
+            self.currentHP = max(0, min(maxHP, hp))
+            if self.currentHP == 0 {
+                self.status = .completed
+            }
+        }
+    }
+
+    /// Deal damage to the boss by completing a micro-task
+    mutating func dealDamage(from task: MicroTask, playerLevel: Int) -> DamageResult {
+        let damage = GameFormulas.bossDamage(taskDifficulty: task.difficulty, playerLevel: playerLevel)
+        let isCritical = Double.random(in: 0...1) < GameFormulas.criticalSuccessChance
+        let finalDamage = isCritical ? damage * 2 : damage
+
+        return applyDamage(finalDamage, isCritical: isCritical)
+    }
+
+    /// Deal damage when a linked quest is completed.
+    mutating func dealLinkedQuestDamage(from quest: DailyQuest, playerLevel: Int) -> DamageResult {
+        let baseDamage = GameFormulas.bossDamage(taskDifficulty: quest.difficulty, playerLevel: playerLevel)
+        let questDamage = max(1, Int(Double(baseDamage) * 0.8))
+        return applyDamage(questDamage, isCritical: false)
+    }
+
+    /// Apply externally computed damage (used when engine passives modify damage output).
+    mutating func applyExternalDamage(_ amount: Int, isCritical: Bool = false) -> DamageResult {
+        applyDamage(max(1, amount), isCritical: isCritical)
+    }
+
+    private mutating func applyDamage(_ amount: Int, isCritical: Bool) -> DamageResult {
+        currentHP -= amount
+        lastDamageDealt = amount
+        totalDamageDealt += amount
+
+        if currentHP <= 0 {
+            currentHP = 0
+            status = .completed
+        }
+
+        return DamageResult(
+            damage: amount,
+            isCritical: isCritical,
+            bossDefeated: isDefeated
+        )
+    }
+
+    mutating func updateDynamicGoalCurrentValue(_ newValue: Double, at date: Date = Date()) {
+        guard var goal = dynamicGoal else { return }
+
+        goal.currentValue = newValue
+        goal.lastUpdatedAt = date
+        dynamicGoal = goal
+
+        // Preserve damage dealt through linked quest completions and micro-tasks
+        // when the underlying dynamic metric refreshes.
+        let goalDrivenHP = Int((1.0 - goal.normalizedProgress) * Double(maxHP))
+        currentHP = goalDrivenHP - totalDamageDealt
+        currentHP = max(0, min(maxHP, currentHP))
+
+        if currentHP <= 0 {
+            currentHP = 0
+            status = .completed
+        } else {
+            status = .inProgress
+        }
+    }
+}
+
+/// Result of dealing damage to a boss
+struct DamageResult {
+    let damage: Int
+    let isCritical: Bool
+    let bossDefeated: Bool
+}
+
+/// Micro-tasks that deal damage to bosses
+struct MicroTask: Codable, Identifiable {
+    let id: UUID
+    let title: String
+    let difficulty: QuestDifficulty
+    var isCompleted: Bool
+    let createdAt: Date
+
+    var estimatedDamage: Int {
+        GameFormulas.questXP(difficulty: difficulty)
+    }
+
+    init(title: String, difficulty: QuestDifficulty = .normal) {
+        self.id = UUID()
+        self.title = title
+        self.difficulty = difficulty
+        self.isCompleted = false
+        self.createdAt = Date()
+    }
+}
+
+// MARK: - Dungeon (Deep Work Session)
+
+/// Dungeons - Timed deep work sessions with penalties for early exit
+struct Dungeon: QuestProtocol {
+    let id: UUID
+    let title: String
+    let description: String
+    var questType: QuestType = .dungeon
+    let difficulty: QuestDifficulty
+    var status: QuestStatus
+    let targetStats: [StatType]
+    let xpReward: Int
+    let goldReward: Int
+    let createdAt: Date
+
+    // Dungeon Specific
+    let durationMinutes: Int
+    var elapsedSeconds: Int
+    var isActive: Bool
+    var startedAt: Date?
+    var completedAt: Date?
+    var raidFailed: Bool
+
+    var totalSeconds: Int {
+        durationMinutes * 60
+    }
+
+    var remainingSeconds: Int {
+        max(0, totalSeconds - elapsedSeconds)
+    }
+
+    var progress: Double {
+        guard totalSeconds > 0 else { return 0 }
+        return clampedUnitProgress(Double(elapsedSeconds) / Double(totalSeconds))
+    }
+
+    var isComplete: Bool {
+        elapsedSeconds >= totalSeconds
+    }
+
+    var formattedTimeRemaining: String {
+        let minutes = remainingSeconds / 60
+        let seconds = remainingSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    var formattedElapsedTime: String {
+        let minutes = elapsedSeconds / 60
+        let seconds = elapsedSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    init(
+        title: String,
+        description: String = "Focus. The shadows await.",
+        difficulty: QuestDifficulty = .normal,
+        targetStats: [StatType] = [.intelligence, .willpower],
+        durationMinutes: Int = 25
+    ) {
+        self.id = UUID()
+        self.title = title
+        self.description = description
+        self.difficulty = difficulty
+        self.status = .available
+        self.targetStats = targetStats
+        // Dungeon XP scales with duration
+        self.xpReward = (durationMinutes / 5) * GameFormulas.questXP(difficulty: difficulty)
+        self.goldReward = (durationMinutes / 5) * GameFormulas.questGold(difficulty: difficulty)
+        self.createdAt = Date()
+
+        self.durationMinutes = durationMinutes
+        self.elapsedSeconds = 0
+        self.isActive = false
+        self.startedAt = nil
+        self.completedAt = nil
+        self.raidFailed = false
+    }
+
+    mutating func start() {
+        isActive = true
+        status = .inProgress
+        startedAt = Date()
+    }
+
+    mutating func tick() {
+        if isActive && !isComplete {
+            elapsedSeconds += 1
+            if isComplete {
+                complete()
+            }
+        }
+    }
+
+    mutating func complete() {
+        isActive = false
+        status = .completed
+        completedAt = Date()
+    }
+
+    mutating func fail() {
+        isActive = false
+        status = .failed
+        raidFailed = true
+        completedAt = Date()
+    }
+}
+
+// MARK: - Penalty Quest
+
+/// Penalty Quests - The price of failure
+struct PenaltyQuest: Codable, Identifiable {
+    let id: UUID
+    let title: String
+    let description: String
+    let penaltyType: PenaltyType
+    var isCompleted: Bool
+    let createdAt: Date
+    let expiresAt: Date
+
+    var isExpired: Bool {
+        Date() > expiresAt
+    }
+
+    enum PenaltyType: String, Codable {
+        case physical = "Physical Punishment"
+        case social = "Public Accountability"
+        case restriction = "Privilege Restriction"
+
+        var icon: String {
+            switch self {
+            case .physical: return "figure.core.training"
+            case .social: return "megaphone.fill"
+            case .restriction: return "lock.fill"
+            }
+        }
+    }
+
+    init(
+        title: String,
+        description: String,
+        penaltyType: PenaltyType,
+        hoursToComplete: Int = 24
+    ) {
+        self.id = UUID()
+        self.title = title
+        self.description = description
+        self.penaltyType = penaltyType
+        self.isCompleted = false
+        self.createdAt = Date()
+        self.expiresAt = Date().addingTimeInterval(TimeInterval(hoursToComplete * 3600))
+    }
+}
+
+// MARK: - Loot Box
+
+/// Loot Boxes - Variable rewards for critical successes
+struct LootBox: Codable, Identifiable {
+    let id: UUID
+    let rarity: LootRarity
+    let contents: [LootItem]
+    var isOpened: Bool
+    let obtainedAt: Date
+
+    enum LootRarity: String, Codable {
+        case common = "Common"
+        case rare = "Rare"
+        case epic = "Epic"
+        case legendary = "Legendary"
+
+        var color: Color {
+            switch self {
+            case .common: return .gray
+            case .rare: return .blue
+            case .epic: return .purple
+            case .legendary: return .yellow
+            }
+        }
+
+        var glowIntensity: Double {
+            switch self {
+            case .common: return 0.3
+            case .rare: return 0.5
+            case .epic: return 0.7
+            case .legendary: return 1.0
+            }
+        }
+    }
+
+    init(rarity: LootRarity) {
+        self.id = UUID()
+        self.rarity = rarity
+        self.contents = LootBox.generateContents(for: rarity)
+        self.isOpened = false
+        self.obtainedAt = Date()
+    }
+
+    static func generateContents(for rarity: LootRarity) -> [LootItem] {
+        var items: [LootItem] = []
+
+        // Gold reward based on rarity
+        let goldAmount: Int
+        switch rarity {
+        case .common: goldAmount = Int.random(in: 10...25)
+        case .rare: goldAmount = Int.random(in: 25...75)
+        case .epic: goldAmount = Int.random(in: 75...200)
+        case .legendary: goldAmount = Int.random(in: 200...500)
+        }
+        items.append(.gold(goldAmount))
+
+        // Chance for bonus XP
+        if Double.random(in: 0...1) < 0.3 {
+            let xpAmount = goldAmount * 2
+            items.append(.bonusXP(xpAmount))
+        }
+
+        // Chance for Shadow Soldier (Epic and Legendary only)
+        if rarity == .epic || rarity == .legendary {
+            if Double.random(in: 0...1) < (rarity == .legendary ? 0.5 : 0.2) {
+                let soldierRank: ShadowSoldier.SoldierRank = rarity == .legendary ? .knight : .elite
+                items.append(.shadowSoldier(name: generateSoldierName(), rank: soldierRank))
+            }
+        }
+
+        return items
+    }
+
+    static func generateSoldierName() -> String {
+        let prefixes = ["Iron", "Shadow", "Dark", "Storm", "Frost", "Flame", "Steel", "Night"]
+        let suffixes = ["Fang", "Claw", "Knight", "Guard", "Warden", "Sentinel", "Warrior", "Hunter"]
+        let prefix = prefixes.randomElement() ?? "Shadow"
+        let suffix = suffixes.randomElement() ?? "Hunter"
+        return "\(prefix) \(suffix)"
+    }
+}
+
+/// Contents of a loot box
+enum LootItem: Codable {
+    case gold(Int)
+    case bonusXP(Int)
+    case shadowSoldier(name: String, rank: ShadowSoldier.SoldierRank)
+    case title(String)
+    case statBoost(stat: StatType, amount: Int)
+
+    var displayName: String {
+        switch self {
+        case .gold(let amount): return "\(amount) Gold"
+        case .bonusXP(let amount): return "\(amount) Bonus XP"
+        case .shadowSoldier(let name, _): return "Shadow Soldier: \(name)"
+        case .title(let title): return "Title: \(title)"
+        case .statBoost(let stat, let amount): return "+\(amount) \(stat.rawValue)"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .gold: return "dollarsign.circle.fill"
+        case .bonusXP: return "star.fill"
+        case .shadowSoldier: return "person.fill"
+        case .title: return "text.badge.star"
+        case .statBoost: return "arrow.up.circle.fill"
+        }
+    }
+}
+
+// MARK: - Quest Progress Formatting
+
+enum QuestProgressFormatter {
+    /// Formats quest metric values so the text track matches the live progress bar.
+    /// Values that are effectively whole numbers render as integers, otherwise
+    /// one decimal is retained for fractional progress (for example, 0.6 / 5 minutes).
+    static func metricDisplay(_ value: Double) -> String {
+        guard value.isFinite else { return "0" }
+
+        let clamped = max(0, value)
+        let roundedOneDecimal = (clamped * 10).rounded() / 10
+        let nearestInteger = roundedOneDecimal.rounded()
+
+        if abs(roundedOneDecimal - nearestInteger) < 0.000_1 {
+            return String(Int(nearestInteger))
+        }
+
+        return String(format: "%.1f", roundedOneDecimal)
+    }
+}
+
+// MARK: - Default Daily Quests
+
+/// Pre-configured daily quests following the "Insultingly Low Bar" philosophy
+struct DefaultQuests {
+
+    static let dailyQuests: [DailyQuest] = [
+        // STR - Strength
+        DailyQuest(
+            title: "1 Pushup",
+            description: "Just one. That's all the System asks.",
+            difficulty: .trivial,
+            targetStats: [.strength],
+            trackingType: .manual,
+            targetValue: 1,
+            unit: "pushup"
+        ),
+        DailyQuest(
+            title: "Walk 10,000 Steps",
+            description: "Move your vessel through the world.",
+            difficulty: .normal,
+            targetStats: [.strength, .vitality],
+            trackingType: .healthKit,
+            targetValue: 10000,
+            unit: "steps",
+            healthKitIdentifier: "HKQuantityTypeIdentifierStepCount"
+        ),
+
+        // INT - Intelligence
+        DailyQuest(
+            title: "Read 1 Page",
+            description: "A single page. Knowledge compounds.",
+            difficulty: .trivial,
+            targetStats: [.intelligence],
+            trackingType: .manual,
+            targetValue: 1,
+            unit: "page"
+        ),
+        // AGI - Agility
+        DailyQuest(
+            title: "1 Minute Stretch",
+            description: "Flexibility is freedom.",
+            difficulty: .trivial,
+            targetStats: [.agility],
+            trackingType: .manual,
+            targetValue: 1,
+            unit: "minute"
+        ),
+
+        // VIT - Vitality
+        DailyQuest(
+            title: "Sleep 8 Hours",
+            description: "Rest is not weakness. It is regeneration.",
+            difficulty: .normal,
+            targetStats: [.vitality],
+            trackingType: .healthKit,
+            targetValue: 8,
+            unit: "hours",
+            healthKitIdentifier: "HKCategoryTypeIdentifierSleepAnalysis"
+        ),
+        DailyQuest(
+            title: "Drink Water",
+            description: "Hydrate your vessel.",
+            difficulty: .trivial,
+            targetStats: [.vitality],
+            trackingType: .manual,
+            targetValue: 8,
+            unit: "glasses"
+        ),
+
+        // WIL - Willpower
+        // SPI - Spirit
+        DailyQuest(
+            title: "1 Minute Meditation",
+            description: "Silence the noise. Find your center.",
+            difficulty: .trivial,
+            targetStats: [.spirit],
+            trackingType: .manual,
+            targetValue: 1,
+            unit: "minute"
+        ),
+        DailyQuest(
+            title: "Write 1 Gratitude",
+            description: "Acknowledge the light in darkness.",
+            difficulty: .trivial,
+            targetStats: [.spirit],
+            trackingType: .manual,
+            targetValue: 1,
+            unit: "gratitude"
+        )
+    ]
+
+    static let penaltyQuests: [PenaltyQuest] = [
+        PenaltyQuest(
+            title: "The Plank of Penance",
+            description: "Hold a plank for 4 minutes. Feel the burn of failure.",
+            penaltyType: .physical
+        ),
+        PenaltyQuest(
+            title: "Public Accountability",
+            description: "Post on social media: 'I failed my daily quests. Tomorrow I rise.'",
+            penaltyType: .social
+        ),
+        PenaltyQuest(
+            title: "The Fast",
+            description: "No snacks or treats today. Only essentials.",
+            penaltyType: .restriction
+        )
+    ]
+}

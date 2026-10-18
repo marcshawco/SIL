@@ -1,0 +1,2167 @@
+//
+//  GameEngine.swift
+//  SIL
+//
+//  [SYSTEM]: Core processing unit activated.
+//  All game logic flows through this nexus.
+//
+
+import Foundation
+import Combine
+import SwiftUI
+import CoreLocation
+import UIKit
+import WatchConnectivity
+
+// MARK: - Game Engine
+
+/// The central nervous system of SIL
+/// Manages all game logic, XP calculations, level ups, and rewards
+@MainActor
+class GameEngine: ObservableObject {
+
+    static let shared = GameEngine()
+    private static let defaultQuestMigrationKey = "didMigrateDefaultQuestTemplates"
+    private static let zeroStatBaselineMigrationKey = "didMigrateZeroStatBaseline"
+    private static let deathMechanicEnabledKey = "deathMechanicEnabled"
+    private static let agilityDodgeDayKey = "agilityDodgeDay"
+    private static let agilityDodgesUsedKey = "agilityDodgesUsed"
+
+    // MARK: - Published Properties
+
+    @Published var player: Player
+    @Published var dailyQuests: [DailyQuest] = []
+    @Published var activeBossFights: [BossFight] = []
+    @Published var activeDungeon: Dungeon?
+    @Published var pendingLootBoxes: [LootBox] = []
+    @Published var pendingPenalties: [PenaltyQuest] = []
+    @Published var recentActivity: [ActivityLogEntry] = []
+
+    // State tracking
+    @Published var isInDungeon = false
+    @Published var showLevelUpAlert = false
+    @Published var lastLevelUpData: LevelUpData?
+    @Published var showLootBoxOpening = false
+    @Published var currentLootBox: LootBox?
+    @Published private(set) var canUndoLatestQuestCompletion = false
+    @Published private(set) var lastUndoQuestTitle: String?
+    @Published var deathPenaltySummary: DeathPenaltySummary?
+
+    // MARK: - Private Properties
+
+    private var cancellables = Set<AnyCancellable>()
+    private var dungeonTimer: Timer?
+    private var autoSaveTimer: Timer?
+    private var cloudSyncTimer: Timer?
+    private var questCompletionUndoSnapshot: QuestCompletionUndoSnapshot?
+    private var questCompletionUndoTask: Task<Void, Never>?
+    private let questCompletionUndoWindow: TimeInterval = 20
+    private var agilityDodgeDay: Date?
+    private var agilityDodgesUsed = 0
+    private var externalRefreshToken: UInt64 = 0
+
+    struct DynamicBossScaling {
+        let requiredQuestCount: Int
+        let linkedQuestDamage: Int
+        let maxHP: Int
+    }
+
+    private func sanitizeProgress(_ value: Double) -> Double {
+        guard value.isFinite else { return 0 }
+        return min(1.0, max(0.0, value))
+    }
+
+    private struct QuestCompletionUndoSnapshot {
+        let encodedPlayer: Data
+        let dailyQuests: [DailyQuest]
+        let activeBossFights: [BossFight]
+        let pendingLootBoxes: [LootBox]
+        let pendingPenalties: [PenaltyQuest]
+        let recentActivity: [ActivityLogEntry]
+        let questHistory: [QuestHistoryRecord]
+        let createdAt: Date
+        let questTitle: String
+    }
+
+    // MARK: - Initialization
+
+    private init() {
+        // Load player or create new
+        self.player = PlayerDataManager.shared.loadPlayer() ?? Player(name: "Hunter")
+
+        // Load saved quests (fresh installs start with no defaults)
+        self.dailyQuests = QuestDataManager.shared.loadDailyQuests() ?? []
+
+        // Load boss fights
+        self.activeBossFights = QuestDataManager.shared.loadBossFights() ?? []
+
+        // Load recent activity log
+        self.recentActivity = ActivityLogDataManager.shared.loadActivityLog()
+
+        // Reconcile the active title with the attribute-derived class title so
+        // existing profiles migrate off the old rank-name titles immediately.
+        syncClassTitle()
+
+        migrateLegacyDefaultQuestTemplatesIfNeeded()
+        migrateLegacyStatBaselineIfNeeded()
+
+        // Ensure loaded quests are in the active cycle and integrations are synced.
+        refreshQuestCyclesIfNeeded()
+        syncBossLinksWithQuests()
+        dailyQuests.forEach { NotificationManager.shared.scheduleQuestReminder(for: $0) }
+
+        // Set up auto-save
+        setupAutoSave()
+
+        // Set up health data observers
+        setupHealthKitObservers()
+        setupLocationQuestObservers()
+        setupCloudKitSync()
+        Task { @MainActor [weak self] in
+            await self?.syncDynamicBossGoals()
+        }
+        evaluateAchievementsIfNeeded()
+    }
+
+    // MARK: - Quest Completion
+
+    /// Complete a daily quest and award rewards
+    func completeQuest(_ quest: DailyQuest, sendSystemNotification: Bool = true) -> QuestCompletionResult {
+        guard let index = dailyQuests.firstIndex(where: { $0.id == quest.id }) else {
+            return QuestCompletionResult(success: false, message: "Quest not found")
+        }
+
+        if dailyQuests[index].hasSubtasks {
+            let remainingSubtaskIDs = dailyQuests[index].subtasks
+                .filter { !$0.isCompleted }
+                .map(\.id)
+            return completeQuestSubtasks(
+                questID: dailyQuests[index].id,
+                subtaskIDs: remainingSubtaskIDs,
+                sendSystemNotification: sendSystemNotification
+            )
+        }
+
+        guard dailyQuests[index].status != .completed else {
+            return QuestCompletionResult(success: false, message: "Quest already completed")
+        }
+
+        prepareUndoSnapshot(for: quest.title)
+
+        // Mark as completed
+        dailyQuests[index].status = .completed
+        dailyQuests[index].currentProgress = 1.0
+        let completedQuest = dailyQuests[index]
+
+        // Calculate rewards with streak bonus
+        let streakMultiplier = GameFormulas.streakMultiplier(streak: player.currentStreak)
+        let baseXP = completedQuest.xpReward
+        let finalXP = Int(Double(baseXP) * streakMultiplier)
+        let gold = completedQuest.isOptional ? 0 : completedQuest.goldReward
+
+        // Check for critical success (loot box chance)
+        let isCritical = Double.random(in: 0...1) < GameFormulas.criticalSuccessChance
+        var lootBox: LootBox?
+
+        if isCritical {
+            // Generate loot box based on quest difficulty
+            let rarity = determineLootBoxRarity(for: completedQuest.difficulty)
+            lootBox = LootBox(rarity: rarity)
+            if let lootBox {
+                pendingLootBoxes.append(lootBox)
+            }
+        }
+
+        // Award XP
+        let leveledUp = awardXP(finalXP)
+
+        // Award gold for non-optional quests only
+        if gold > 0 {
+            player.gold += gold
+        }
+
+        // Award stat XP
+        for statType in completedQuest.targetStats {
+            awardStatXP(statType, amount: GameFormulas.statXP(difficulty: completedQuest.difficulty))
+        }
+
+        // Update counters
+        player.completedQuestCount += 1
+        QuestDataManager.shared.recordCompletedQuest(completedQuest, xpAwarded: finalXP, goldAwarded: gold)
+        logActivity(
+            type: .questCompleted,
+            title: completedQuest.title,
+            detail: gold > 0 ? "+\(finalXP) XP • +\(gold) Gold" : "+\(finalXP) XP • Optional quest (XP only)"
+        )
+
+        // Always emit a system notification for completed quests so users get
+        // consistent OS-level banners in addition to in-app feedback.
+        if sendSystemNotification {
+            NotificationManager.shared.sendQuestCompletionNotification(
+                questTitle: completedQuest.title,
+                xp: finalXP,
+                gold: gold
+            )
+        }
+
+        applyLinkedQuestDamage(for: completedQuest)
+
+        // Check all quests completed for streak
+        checkDailyQuestStreak()
+        evaluateAchievementsIfNeeded()
+
+        AnalyticsManager.shared.trackFeature("quest_completed")
+        AnalyticsManager.shared.trackFeature("quest_completed_\(completedQuest.trackingType.rawValue)")
+        if completedQuest.isOptional {
+            AnalyticsManager.shared.trackFeature("optional_quest_completed")
+        }
+        if isCritical {
+            AnalyticsManager.shared.trackFeature("critical_quest_completion")
+        }
+
+        // Save
+        save()
+        armQuestCompletionUndoWindow(for: completedQuest.title)
+        HapticManager.shared.questCompleted(isCritical: isCritical)
+
+        return QuestCompletionResult(
+            success: true,
+            message: isCritical ? "CRITICAL SUCCESS!" : "Quest Complete!",
+            xpAwarded: finalXP,
+            goldAwarded: gold,
+            statGains: completedQuest.targetStats.map { ($0, GameFormulas.statXP(difficulty: completedQuest.difficulty)) },
+            isCritical: isCritical,
+            lootBox: lootBox,
+            leveledUp: leveledUp ? lastLevelUpData : nil
+        )
+    }
+
+    func completeQuestSubtask(
+        questID: UUID,
+        subtaskID: UUID,
+        sendSystemNotification: Bool = false
+    ) -> QuestCompletionResult {
+        completeQuestSubtasks(
+            questID: questID,
+            subtaskIDs: [subtaskID],
+            sendSystemNotification: sendSystemNotification
+        )
+    }
+
+    private func completeQuestSubtasks(
+        questID: UUID,
+        subtaskIDs: [UUID],
+        sendSystemNotification: Bool
+    ) -> QuestCompletionResult {
+        guard let index = dailyQuests.firstIndex(where: { $0.id == questID }) else {
+            return QuestCompletionResult(success: false, message: "Quest not found")
+        }
+
+        guard dailyQuests[index].hasSubtasks else {
+            return completeQuest(dailyQuests[index], sendSystemNotification: sendSystemNotification)
+        }
+
+        guard dailyQuests[index].status != .completed else {
+            return QuestCompletionResult(success: false, message: "Quest already completed")
+        }
+
+        let selectedIDs = Set(subtaskIDs)
+        let subtaskIndices = dailyQuests[index].subtasks.indices.filter { subtaskIndex in
+            selectedIDs.contains(dailyQuests[index].subtasks[subtaskIndex].id) &&
+            !dailyQuests[index].subtasks[subtaskIndex].isCompleted
+        }
+
+        guard !subtaskIndices.isEmpty else {
+            return QuestCompletionResult(success: false, message: "Subtask already completed")
+        }
+
+        prepareUndoSnapshot(for: dailyQuests[index].title)
+
+        let questBeforeCompletion = dailyQuests[index]
+        let subtaskCount = max(1, questBeforeCompletion.subtasks.count)
+        let streakMultiplier = GameFormulas.streakMultiplier(streak: player.currentStreak)
+        let totalXP = Int(Double(questBeforeCompletion.xpReward) * streakMultiplier)
+        let totalGold = questBeforeCompletion.isOptional ? 0 : questBeforeCompletion.goldReward
+        let totalStatXP = GameFormulas.statXP(difficulty: questBeforeCompletion.difficulty)
+
+        let xpAwarded = subtaskIndices.reduce(0) { total, subtaskIndex in
+            total + distributedAmount(total: totalXP, index: subtaskIndex, count: subtaskCount)
+        }
+        let goldAwarded = subtaskIndices.reduce(0) { total, subtaskIndex in
+            total + distributedAmount(total: totalGold, index: subtaskIndex, count: subtaskCount)
+        }
+        let statXPAwarded = subtaskIndices.reduce(0) { total, subtaskIndex in
+            total + distributedAmount(total: totalStatXP, index: subtaskIndex, count: subtaskCount)
+        }
+
+        for subtaskIndex in subtaskIndices {
+            dailyQuests[index].subtasks[subtaskIndex].isCompleted = true
+        }
+
+        dailyQuests[index].currentProgress = dailyQuests[index].subtaskProgress
+        if dailyQuests[index].currentProgress > 0 && dailyQuests[index].status == .available {
+            dailyQuests[index].status = .inProgress
+        }
+
+        let leveledUp = xpAwarded > 0 ? awardXP(xpAwarded) : false
+
+        if goldAwarded > 0 {
+            player.gold += goldAwarded
+        }
+
+        if statXPAwarded > 0 {
+            for statType in dailyQuests[index].targetStats {
+                awardStatXP(statType, amount: statXPAwarded)
+            }
+        }
+
+        let completedQuest = dailyQuests[index].completedSubtaskCount == dailyQuests[index].subtasks.count
+        let completedSubtaskTitle = subtaskIndices.count == 1
+            ? dailyQuests[index].subtasks[subtaskIndices[0]].title
+            : "\(subtaskIndices.count) subtasks"
+
+        applyLinkedQuestDamage(
+            for: dailyQuests[index],
+            completedUnitIndices: Array(subtaskIndices),
+            totalUnits: subtaskCount
+        )
+
+        var isCritical = false
+        var lootBox: LootBox?
+        var leveledUpData: LevelUpData?
+
+        if completedQuest {
+            dailyQuests[index].status = .completed
+            dailyQuests[index].currentProgress = 1.0
+            let questAfterCompletion = dailyQuests[index]
+
+            isCritical = Double.random(in: 0...1) < GameFormulas.criticalSuccessChance
+            if isCritical {
+                let rarity = determineLootBoxRarity(for: questAfterCompletion.difficulty)
+                lootBox = LootBox(rarity: rarity)
+                if let lootBox {
+                    pendingLootBoxes.append(lootBox)
+                }
+            }
+
+            player.completedQuestCount += 1
+            QuestDataManager.shared.recordCompletedQuest(questAfterCompletion, xpAwarded: xpAwarded, goldAwarded: goldAwarded)
+            logActivity(
+                type: .questCompleted,
+                title: questAfterCompletion.title,
+                detail: goldAwarded > 0 ? "+\(xpAwarded) XP • +\(goldAwarded) Gold" : "+\(xpAwarded) XP • Quest complete"
+            )
+
+            if sendSystemNotification {
+                NotificationManager.shared.sendQuestCompletionNotification(
+                    questTitle: questAfterCompletion.title,
+                    xp: xpAwarded,
+                    gold: goldAwarded
+                )
+            }
+
+            checkDailyQuestStreak()
+            evaluateAchievementsIfNeeded()
+            leveledUpData = leveledUp ? lastLevelUpData : nil
+            armQuestCompletionUndoWindow(for: questAfterCompletion.title)
+            HapticManager.shared.questCompleted(isCritical: isCritical)
+        } else {
+            logActivity(
+                type: .questCompleted,
+                title: "\(questBeforeCompletion.title) · \(completedSubtaskTitle)",
+                detail: goldAwarded > 0 ? "+\(xpAwarded) XP • +\(goldAwarded) Gold" : "+\(xpAwarded) XP"
+            )
+            armQuestCompletionUndoWindow(for: questBeforeCompletion.title)
+            leveledUpData = leveledUp ? lastLevelUpData : nil
+            HapticManager.shared.success()
+        }
+
+        AnalyticsManager.shared.trackFeature(completedQuest ? "quest_completed" : "quest_subtask_completed")
+        AnalyticsManager.shared.trackFeature("quest_tracking_\(questBeforeCompletion.trackingType.rawValue)")
+        if questBeforeCompletion.isOptional {
+            AnalyticsManager.shared.trackFeature("optional_quest_completed")
+        }
+        if isCritical {
+            AnalyticsManager.shared.trackFeature("critical_quest_completion")
+        }
+
+        save()
+
+        return QuestCompletionResult(
+            success: true,
+            message: completedQuest ? (isCritical ? "CRITICAL SUCCESS!" : "Quest Complete!") : "Subtask Complete!",
+            xpAwarded: xpAwarded,
+            goldAwarded: goldAwarded,
+            statGains: dailyQuests[index].targetStats.map { ($0, statXPAwarded) },
+            isCritical: isCritical,
+            lootBox: lootBox,
+            leveledUp: leveledUpData,
+            isQuestComplete: completedQuest
+        )
+    }
+
+    @discardableResult
+    func undoLastQuestCompletion() -> Bool {
+        guard let snapshot = questCompletionUndoSnapshot else { return false }
+        guard Date().timeIntervalSince(snapshot.createdAt) <= questCompletionUndoWindow else {
+            clearQuestCompletionUndoSnapshot()
+            return false
+        }
+
+        guard let restoredPlayer = try? JSONDecoder().decode(Player.self, from: snapshot.encodedPlayer) else {
+            clearQuestCompletionUndoSnapshot()
+            return false
+        }
+
+        player = restoredPlayer
+        dailyQuests = snapshot.dailyQuests
+        activeBossFights = snapshot.activeBossFights
+        pendingLootBoxes = snapshot.pendingLootBoxes
+        pendingPenalties = snapshot.pendingPenalties
+        recentActivity = snapshot.recentActivity
+        QuestDataManager.shared.overwriteQuestHistory(snapshot.questHistory)
+
+        save()
+        HapticManager.shared.questUndoApplied()
+        SystemMessageHelper.showInfo("Undo Applied", "\"\(snapshot.questTitle)\" completion was reverted.")
+        clearQuestCompletionUndoSnapshot()
+        return true
+    }
+
+    // MARK: - Quest Management
+
+    func saveQuest(_ quest: DailyQuest, replacing existingQuestID: UUID? = nil) {
+        let isEditing = existingQuestID != nil
+        let previousQuest = existingQuestID.flatMap { questID in
+            dailyQuests.first(where: { $0.id == questID })
+        }
+
+        if let existingQuestID,
+           let index = dailyQuests.firstIndex(where: { $0.id == existingQuestID }) {
+            dailyQuests[index] = quest
+        } else {
+            dailyQuests.append(quest)
+        }
+
+        syncBossLink(for: quest)
+        if quest.trackingType == .location || previousQuest?.trackingType == .location {
+            syncLocationGeofences()
+        }
+        NotificationManager.shared.scheduleQuestReminder(for: quest)
+        AnalyticsManager.shared.trackFeature(isEditing ? "quest_updated" : "quest_created")
+        AnalyticsManager.shared.trackFeature("quest_tracking_\(quest.trackingType.rawValue)")
+        save()
+    }
+
+    func deleteQuest(_ questID: UUID) {
+        let deletedQuest = dailyQuests.first(where: { $0.id == questID })
+        dailyQuests.removeAll { $0.id == questID }
+
+        for index in activeBossFights.indices {
+            activeBossFights[index].linkedQuestIDs.removeAll { $0 == questID }
+        }
+
+        if deletedQuest?.trackingType == .location {
+            LocationManager.shared.removeQuestGeofence(for: questID)
+        }
+        NotificationManager.shared.removeQuestReminder(questID: questID)
+        AnalyticsManager.shared.trackFeature("quest_deleted")
+        if let trackingType = deletedQuest?.trackingType.rawValue {
+            AnalyticsManager.shared.trackFeature("quest_deleted_\(trackingType)")
+        }
+        save()
+    }
+
+    /// Remove a boss fight without awarding any rewards (user-initiated delete).
+    /// Cleans up the auto-generated goal quest and unlinks any linked quests,
+    /// mirroring the teardown in `handleBossDefeated` minus the loot/XP.
+    func deleteBossFight(_ bossID: UUID) {
+        guard let boss = activeBossFights.first(where: { $0.id == bossID }) else { return }
+
+        activeBossFights.removeAll { $0.id == bossID }
+
+        if let generatedQuestID = boss.dynamicGoal?.generatedQuestID {
+            dailyQuests.removeAll { $0.id == generatedQuestID }
+            NotificationManager.shared.removeQuestReminder(questID: generatedQuestID)
+        }
+
+        for index in dailyQuests.indices where dailyQuests[index].linkedBossID == bossID {
+            dailyQuests[index].linkedBossID = nil
+            if dailyQuests[index].linkedDynamicBossID == bossID {
+                dailyQuests[index].linkedDynamicBossID = nil
+            }
+        }
+
+        AnalyticsManager.shared.trackFeature("boss_deleted")
+        HapticManager.shared.selection()
+        save()
+    }
+
+    func startFreshProfile(named name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        player = Player(name: trimmed.isEmpty ? "Hunter" : trimmed)
+        dailyQuests = []
+        activeBossFights = []
+        activeDungeon = nil
+        pendingLootBoxes = []
+        pendingPenalties = []
+        recentActivity = []
+        isInDungeon = false
+
+        LocationManager.shared.removeAllGeofences()
+        clearQuestCompletionUndoSnapshot()
+        AnalyticsManager.shared.trackFeature("fresh_profile_started")
+        save()
+    }
+
+    func resetQuestProgressManually() {
+        let now = Date()
+        for index in dailyQuests.indices {
+            dailyQuests[index].status = .available
+            dailyQuests[index].currentProgress = 0
+            for subtaskIndex in dailyQuests[index].subtasks.indices {
+                dailyQuests[index].subtasks[subtaskIndex].isCompleted = false
+            }
+            dailyQuests[index].expiresAt = dailyQuests[index].resolvedFrequency.nextResetDate(from: now)
+        }
+        AnalyticsManager.shared.trackFeature("quest_progress_reset")
+        save()
+    }
+
+    /// Determine loot box rarity based on quest difficulty
+    private func determineLootBoxRarity(for difficulty: QuestDifficulty) -> LootBox.LootRarity {
+        let roll = Double.random(in: 0...1)
+
+        switch difficulty {
+        case .trivial, .easy:
+            return .common
+        case .normal:
+            if roll < 0.1 { return .rare }
+            return .common
+        case .hard:
+            if roll < 0.05 { return .epic }
+            if roll < 0.25 { return .rare }
+            return .common
+        case .extreme:
+            if roll < 0.1 { return .epic }
+            if roll < 0.4 { return .rare }
+            return .common
+        case .legendary:
+            if roll < 0.05 { return .legendary }
+            if roll < 0.2 { return .epic }
+            return .rare
+        }
+    }
+
+    // MARK: - XP System
+
+    /// Award XP to the player, checking for level up
+    @discardableResult
+    func awardXP(_ amount: Int) -> Bool {
+        let previousLevel = player.level
+        player.currentXP += amount
+        player.totalXP += amount
+
+        // Check for level up(s)
+        var leveledUp = false
+        while player.currentXP >= GameFormulas.xpRequired(forLevel: player.level + 1) {
+            player.level += 1
+            leveledUp = true
+        }
+
+        if leveledUp {
+            handleLevelUp(from: previousLevel, to: player.level)
+        }
+
+        return leveledUp
+    }
+
+    /// Award XP to a specific stat
+    func awardStatXP(_ statType: StatType, amount: Int) {
+        guard var stat = player.stats[statType] else { return }
+
+        let sanitizedAmount = max(1, amount)
+        let pointGain = max(1, Int((Double(sanitizedAmount) / 5.0).rounded()))
+
+        stat.experience += sanitizedAmount
+        stat.baseValue = min(999, stat.baseValue + pointGain)
+
+        player.stats[statType] = stat
+    }
+
+    /// Reconciles the player's active title. The attribute-derived class title
+    /// (see `PlayerClassTitle`) is always earned/unlocked; the *active* title is
+    /// the player's chosen `preferredTitle` when still valid, otherwise the auto
+    /// class title. The level-based `rank` is a separate, complementary badge.
+    func syncClassTitle() {
+        let derived = player.classTitle
+        if !player.unlockedTitles.contains(derived) {
+            player.unlockedTitles.append(derived)
+        }
+
+        if let preferred = player.preferredTitle, player.unlockedTitles.contains(preferred) {
+            if player.title != preferred { player.title = preferred }
+        } else {
+            if player.preferredTitle != nil { player.preferredTitle = nil } // prune stale pick
+            if player.title != derived { player.title = derived }
+        }
+    }
+
+    /// Player picks an active title from the ones they've earned.
+    func setPreferredTitle(_ title: String) {
+        guard player.unlockedTitles.contains(title) else { return }
+        player.preferredTitle = title
+        syncClassTitle()
+        HapticManager.shared.selection()
+        save()
+    }
+
+    /// Revert to the automatic attribute-derived class title.
+    func useAutomaticTitle() {
+        player.preferredTitle = nil
+        syncClassTitle()
+        HapticManager.shared.selection()
+        save()
+    }
+
+    /// Handle level up rewards and notifications
+    private func handleLevelUp(from previousLevel: Int, to newLevel: Int) {
+        let previousRank = PlayerRank.rank(forLevel: previousLevel)
+        let newRank = PlayerRank.rank(forLevel: newLevel)
+        let rankUp = newRank != previousRank
+        let levelsGained = max(0, newLevel - previousLevel)
+        let levelUpRecovery = applyLevelUpRecoveryBonus(levelsGained: levelsGained)
+
+        // The mastery tier can shift on level up, so refresh the class title.
+        syncClassTitle()
+
+        // Create level up data for display
+        lastLevelUpData = LevelUpData(
+            previousLevel: previousLevel,
+            newLevel: newLevel,
+            previousRank: previousRank,
+            newRank: newRank,
+            rankUp: rankUp,
+            statsUnlocked: [] // Could add stat point allocation here
+        )
+
+        showLevelUpAlert = true
+        HapticManager.shared.levelUp()
+
+        // Send notification
+        NotificationManager.shared.sendLevelUpNotification(level: newLevel, rank: newRank)
+
+        if levelUpRecovery.healedHP > 0 || levelUpRecovery.bonusGold > 0 {
+            var detailParts: [String] = []
+            if levelUpRecovery.healedHP > 0 {
+                detailParts.append("+\(levelUpRecovery.healedHP) HP")
+            }
+            if levelUpRecovery.bonusGold > 0 {
+                detailParts.append("+\(levelUpRecovery.bonusGold) Gold")
+            }
+            logActivity(
+                type: .rewardConsumed,
+                title: "Level Up Bonus",
+                detail: detailParts.joined(separator: " • ")
+            )
+        }
+    }
+
+    private func applyLevelUpRecoveryBonus(levelsGained: Int) -> (healedHP: Int, bonusGold: Int) {
+        guard levelsGained > 0 else { return (0, 0) }
+
+        var totalHealed = 0
+        var totalBonusGold = 0
+
+        for _ in 0..<levelsGained {
+            if player.currentHP < player.maxHP {
+                let hpBefore = player.currentHP
+                player.currentHP = min(player.maxHP, player.currentHP + 15)
+                totalHealed += max(0, player.currentHP - hpBefore)
+            } else {
+                player.gold += 15
+                totalBonusGold += 15
+            }
+        }
+
+        return (totalHealed, totalBonusGold)
+    }
+
+    // MARK: - Boss Fights
+
+    /// Create a new boss fight (project)
+    func createBossFight(
+        title: String,
+        description: String,
+        difficulty: QuestDifficulty,
+        targetStats: [StatType],
+        maxHP: Int,
+        linkedQuestIDs: [UUID] = [],
+        dynamicGoal: DynamicBossGoal? = nil,
+        autoGenerateGoalQuest: Bool = false,
+        deadline: Date?
+    ) -> BossFight {
+        let resolvedMaxHP: Int
+        if let dynamicGoal {
+            resolvedMaxHP = scaledDynamicBossMaxHP(
+                for: dynamicGoal,
+                difficulty: difficulty,
+                playerLevel: player.level
+            )
+        } else {
+            resolvedMaxHP = maxHP
+        }
+
+        var boss = BossFight(
+            title: title,
+            description: description,
+            difficulty: difficulty,
+            targetStats: targetStats,
+            maxHP: resolvedMaxHP,
+            linkedQuestIDs: linkedQuestIDs,
+            dynamicGoal: dynamicGoal,
+            deadline: deadline
+        )
+
+        if autoGenerateGoalQuest, let dynamicGoal {
+            let generated = makeGeneratedQuest(for: boss, goal: dynamicGoal)
+            dailyQuests.append(generated)
+            boss.linkedQuestIDs.append(generated.id)
+            boss.dynamicGoal?.generatedQuestID = generated.id
+            NotificationManager.shared.scheduleQuestReminder(for: generated)
+        }
+
+        activeBossFights.append(boss)
+        if boss.dynamicGoal != nil {
+            tagDynamicLinkedQuests(for: boss.id, linkedQuestIDs: boss.linkedQuestIDs)
+        }
+        adjustGeneratedGoalQuestTargets()
+        save()
+
+        return boss
+    }
+
+    func scaledDynamicBossMaxHP(
+        for goal: DynamicBossGoal,
+        difficulty: QuestDifficulty,
+        playerLevel: Int
+    ) -> Int {
+        dynamicBossScaling(for: goal, difficulty: difficulty, playerLevel: playerLevel).maxHP
+    }
+
+    func dynamicBossScaling(
+        for goal: DynamicBossGoal,
+        difficulty: QuestDifficulty,
+        playerLevel: Int
+    ) -> DynamicBossScaling {
+        let cadenceTarget = max(0.1, abs(goal.perCadenceTarget))
+        let requiredQuestCount = max(1, Int(ceil(goal.totalGoalAmount / cadenceTarget)))
+        let baseDamage = GameFormulas.bossDamage(taskDifficulty: difficulty, playerLevel: playerLevel)
+        let linkedQuestDamage = max(1, Int(Double(baseDamage) * 0.8))
+        let maxHP = max(1, requiredQuestCount * linkedQuestDamage)
+
+        return DynamicBossScaling(
+            requiredQuestCount: requiredQuestCount,
+            linkedQuestDamage: linkedQuestDamage,
+            maxHP: maxHP
+        )
+    }
+
+    func updateDynamicBossCurrentValue(bossId: UUID, currentValue: Double) {
+        guard let index = activeBossFights.firstIndex(where: { $0.id == bossId }) else { return }
+        let wasDefeated = activeBossFights[index].isDefeated
+        let sanitizedValue = currentValue.isFinite ? currentValue : 0
+        activeBossFights[index].updateDynamicGoalCurrentValue(sanitizedValue)
+
+        adjustGeneratedGoalQuestTargets()
+
+        if activeBossFights[index].isDefeated && !wasDefeated {
+            let boss = activeBossFights[index]
+            handleBossDefeated(boss)
+        } else {
+            save()
+        }
+    }
+
+    /// Add a micro-task to a boss fight
+    func addMicroTask(to bossId: UUID, title: String, difficulty: QuestDifficulty) {
+        guard let index = activeBossFights.firstIndex(where: { $0.id == bossId }) else { return }
+
+        let task = MicroTask(title: title, difficulty: difficulty)
+        activeBossFights[index].microTasks.append(task)
+        save()
+    }
+
+    /// Complete a micro-task and deal damage to boss
+    func completeMicroTask(bossId: UUID, taskId: UUID) -> DamageResult? {
+        guard let bossIndex = activeBossFights.firstIndex(where: { $0.id == bossId }),
+              let taskIndex = activeBossFights[bossIndex].microTasks.firstIndex(where: { $0.id == taskId }) else {
+            return nil
+        }
+
+        // Mark task as completed
+        activeBossFights[bossIndex].microTasks[taskIndex].isCompleted = true
+
+        // Deal damage
+        let task = activeBossFights[bossIndex].microTasks[taskIndex]
+        let result = activeBossFights[bossIndex].dealDamage(from: task, playerLevel: player.level)
+
+        // Check if boss defeated
+        if result.bossDefeated {
+            handleBossDefeated(activeBossFights[bossIndex])
+        } else {
+            HapticManager.shared.bossHit(isCritical: result.isCritical)
+        }
+
+        save()
+        return result
+    }
+
+    /// Deal boss damage from completion of linked daily quests.
+    private func applyLinkedQuestDamage(
+        for quest: DailyQuest,
+        completedUnitIndices: [Int] = [0],
+        totalUnits: Int = 1
+    ) {
+        var defeatedBossIDs: [UUID] = []
+
+        for index in activeBossFights.indices {
+            guard activeBossFights[index].linkedQuestIDs.contains(quest.id),
+                  !activeBossFights[index].isDefeated else {
+                continue
+            }
+
+            let baseDamage = GameFormulas.bossDamage(taskDifficulty: quest.difficulty, playerLevel: player.level)
+            let fullQuestDamage = max(1, Int(Double(baseDamage) * 0.8))
+            let damage = completedUnitIndices.reduce(0) { total, unitIndex in
+                total + distributedAmount(total: fullQuestDamage, index: unitIndex, count: totalUnits)
+            }
+
+            guard damage > 0 else { continue }
+
+            let result = activeBossFights[index].applyExternalDamage(damage)
+
+            if result.bossDefeated {
+                defeatedBossIDs.append(activeBossFights[index].id)
+            }
+        }
+
+        for bossID in defeatedBossIDs {
+            if let defeatedBoss = activeBossFights.first(where: { $0.id == bossID }) {
+                handleBossDefeated(defeatedBoss)
+            }
+        }
+    }
+
+    private func distributedAmount(total: Int, index: Int, count: Int) -> Int {
+        guard total > 0, count > 0, index >= 0, index < count else { return 0 }
+        let base = total / count
+        let remainder = total % count
+        return base + (index < remainder ? 1 : 0)
+    }
+
+    /// Handle boss defeat rewards
+    private func handleBossDefeated(_ boss: BossFight) {
+        // Award XP and gold
+        let xp = boss.xpReward
+        let gold = boss.goldReward
+
+        awardXP(xp)
+        player.gold += gold
+
+        // Award stat XP
+        for statType in boss.targetStats {
+            awardStatXP(statType, amount: GameFormulas.statXP(difficulty: boss.difficulty) * 5)
+        }
+
+        // Increment counter
+        player.defeatedBossCount += 1
+        logActivity(
+            type: .bossDefeated,
+            title: boss.title,
+            detail: "+\(xp) XP • +\(gold) Gold"
+        )
+
+        // Generate epic/legendary loot box
+        let lootBox = LootBox(rarity: boss.difficulty == .legendary ? .legendary : .epic)
+        pendingLootBoxes.append(lootBox)
+
+        // Remove from active
+        activeBossFights.removeAll { $0.id == boss.id }
+
+        if let generatedQuestID = boss.dynamicGoal?.generatedQuestID {
+            dailyQuests.removeAll { $0.id == generatedQuestID }
+            NotificationManager.shared.removeQuestReminder(questID: generatedQuestID)
+        }
+
+        for index in dailyQuests.indices where dailyQuests[index].linkedBossID == boss.id {
+            dailyQuests[index].linkedBossID = nil
+            if dailyQuests[index].linkedDynamicBossID == boss.id {
+                dailyQuests[index].linkedDynamicBossID = nil
+            }
+        }
+
+        // Send notification
+        NotificationManager.shared.sendBossDefeatedNotification(bossName: boss.title)
+        HapticManager.shared.bossDefeated()
+        evaluateAchievementsIfNeeded()
+    }
+
+    // MARK: - Dungeon System
+
+    /// Start a dungeon (deep work session)
+    func startDungeon(minutes: Int, title: String = "Deep Work Session") {
+        let dungeon = Dungeon(
+            title: title,
+            durationMinutes: minutes
+        )
+
+        activeDungeon = dungeon
+        activeDungeon?.start()
+        isInDungeon = true
+
+        // Start timer
+        dungeonTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            Task { @MainActor [weak self] in
+                self?.tickDungeon()
+            }
+        }
+
+        // Send notification
+        NotificationManager.shared.scheduleDungeonEndNotification(in: minutes)
+    }
+
+    /// Tick the dungeon timer
+    private func tickDungeon() {
+        activeDungeon?.tick()
+
+        if activeDungeon?.isComplete == true {
+            completeDungeon()
+        }
+    }
+
+    /// Complete a dungeon successfully
+    func completeDungeon() {
+        guard let dungeon = activeDungeon else { return }
+
+        dungeonTimer?.invalidate()
+        dungeonTimer = nil
+
+        // Award rewards
+        let xp = dungeon.xpReward
+        let gold = dungeon.goldReward
+
+        awardXP(xp)
+        player.gold += gold
+
+        // Award stat XP (intelligence and willpower)
+        for statType in dungeon.targetStats {
+            awardStatXP(statType, amount: GameFormulas.statXP(difficulty: dungeon.difficulty) * 2)
+        }
+
+        // Update counter
+        player.dungeonsClearedCount += 1
+
+        // Clear state
+        activeDungeon?.complete()
+        isInDungeon = false
+        evaluateAchievementsIfNeeded()
+
+        save()
+
+        // Send celebration notification
+        NotificationManager.shared.sendDungeonClearedNotification(
+            dungeonName: dungeon.title,
+            xp: xp
+        )
+    }
+
+    /// Fail/abandon a dungeon
+    func failDungeon() {
+        guard activeDungeon != nil else { return }
+
+        dungeonTimer?.invalidate()
+        dungeonTimer = nil
+
+        activeDungeon?.fail()
+
+        // Apply penalty
+        applyPenalty(reason: .dungeonFailed)
+
+        // Clear state
+        isInDungeon = false
+        activeDungeon = nil
+
+        save()
+    }
+
+    /// End a dungeon early without penalty. Awards XP / gold / stat XP
+    /// scaled by elapsed progress so the Hunter keeps proportional credit
+    /// for time invested. If `progress >= 1`, this is equivalent to
+    /// completing the dungeon naturally.
+    func endDungeonEarly() {
+        guard let dungeon = activeDungeon else { return }
+
+        dungeonTimer?.invalidate()
+        dungeonTimer = nil
+
+        if dungeon.isComplete {
+            completeDungeon()
+            return
+        }
+
+        let progress = max(0, min(1, dungeon.progress))
+        let partialXP = Int((Double(dungeon.xpReward) * progress).rounded())
+        let partialGold = Int((Double(dungeon.goldReward) * progress).rounded())
+        let elapsedMinutes = max(0, dungeon.elapsedSeconds / 60)
+
+        if partialXP > 0 {
+            _ = awardXP(partialXP)
+        }
+        if partialGold > 0 {
+            player.gold += partialGold
+        }
+        if progress > 0 {
+            for statType in dungeon.targetStats {
+                let baseStatXP = GameFormulas.statXP(difficulty: dungeon.difficulty) * 2
+                let scaled = Int((Double(baseStatXP) * progress).rounded())
+                if scaled > 0 {
+                    awardStatXP(statType, amount: scaled)
+                }
+            }
+            player.dungeonsClearedCount += 1
+        }
+
+        let detail: String
+        if partialGold > 0 {
+            detail = "+\(partialXP) XP · +\(partialGold) g · \(elapsedMinutes) min · \(Int(progress * 100))%"
+        } else {
+            detail = "+\(partialXP) XP · \(elapsedMinutes) min · \(Int(progress * 100))%"
+        }
+        recordExternalActivity(
+            type: .questCompleted,
+            title: "Dungeon ended · \(dungeon.title)",
+            detail: detail
+        )
+
+        activeDungeon?.fail()
+        isInDungeon = false
+        activeDungeon = nil
+
+        evaluateAchievementsIfNeeded()
+        save()
+    }
+
+    // MARK: - Loot Box System
+
+    /// Open a loot box and collect rewards
+    func openLootBox(_ lootBox: LootBox) -> [LootItem] {
+        guard let index = pendingLootBoxes.firstIndex(where: { $0.id == lootBox.id }) else {
+            return []
+        }
+
+        pendingLootBoxes[index].isOpened = true
+        let contents = pendingLootBoxes[index].contents
+
+        // Apply rewards
+        for item in contents {
+            switch item {
+            case .gold(let amount):
+                player.gold += amount
+
+            case .bonusXP(let amount):
+                awardXP(amount)
+
+            case .shadowSoldier(let name, let rank):
+                let soldier = ShadowSoldier(
+                    id: UUID(),
+                    name: name,
+                    rank: rank,
+                    obtainedDate: Date(),
+                    source: "Loot Box"
+                )
+                player.shadowSoldiers.append(soldier)
+
+            case .title(let title):
+                if !player.unlockedTitles.contains(title) {
+                    player.unlockedTitles.append(title)
+                }
+
+            case .statBoost(let stat, let amount):
+                if var playerStat = player.stats[stat] {
+                    playerStat.bonusValue += amount
+                    player.stats[stat] = playerStat
+                }
+            }
+        }
+
+        // Remove from pending
+        pendingLootBoxes.remove(at: index)
+
+        logActivity(
+            type: .rewardConsumed,
+            title: "Loot Box Opened",
+            detail: "\(contents.count) reward\(contents.count == 1 ? "" : "s") claimed"
+        )
+
+        save()
+        return contents
+    }
+
+    // MARK: - Streak System
+
+    /// Check and update daily quest streak
+    private func checkDailyQuestStreak() {
+        let dailyCycleQuests = dailyQuests.filter { $0.resolvedFrequency == .daily && !$0.isOptional }
+        guard !dailyCycleQuests.isEmpty else { return }
+
+        let completedCount = dailyCycleQuests.filter { $0.status == .completed }.count
+        let totalRequired = dailyCycleQuests.count
+
+        // All daily quests completed?
+        if completedCount >= totalRequired {
+            let today = Calendar.current.startOfDay(for: Date())
+
+            if let lastActive = player.lastActiveDate {
+                let lastActiveDay = Calendar.current.startOfDay(for: lastActive)
+                let dayDifference = Calendar.current.dateComponents([.day], from: lastActiveDay, to: today).day ?? 0
+
+                if dayDifference == 1 {
+                    // Consecutive day - increment streak
+                    player.currentStreak += 1
+                } else if dayDifference > 1 {
+                    // Streak broken
+                    player.currentStreak = 1
+                }
+                // Same day - don't change streak
+            } else {
+                // First completion ever
+                player.currentStreak = 1
+            }
+
+            // Update longest streak
+            if player.currentStreak > player.longestStreak {
+                player.longestStreak = player.currentStreak
+            }
+
+            player.lastActiveDate = today
+        }
+    }
+
+    /// Legacy entrypoint retained for compatibility.
+    private func checkForMissedQuests() {
+        refreshQuestCyclesIfNeeded()
+    }
+
+    /// Rolls quests into the currently active cycle based on frequency.
+    private func refreshQuestCyclesIfNeeded(referenceDate: Date = Date()) {
+        guard !dailyQuests.isEmpty else { return }
+
+        var didChange = false
+        var missedQuestCount = 0
+        var missedQuestDamageWeight: Double = 0
+        var partialCreditXP: Int = 0
+        for index in dailyQuests.indices {
+            while referenceDate >= dailyQuests[index].expiresAt {
+                if dailyQuests[index].status != .completed && !dailyQuests[index].isOptional {
+                    missedQuestCount += 1
+                    let progress = sanitizeProgress(dailyQuests[index].currentProgress)
+                    if progress >= 0.70 {
+                        // Partial credit: 70%+ still grants some XP and reduces missed-day damage.
+                        let questPartialXP = max(1, Int((Double(dailyQuests[index].xpReward) * progress * 0.5).rounded()))
+                        partialCreditXP += questPartialXP
+                        missedQuestDamageWeight += max(0.2, 1.0 - progress)
+
+                        logActivity(
+                            type: .questCompleted,
+                            title: "\(dailyQuests[index].title) (Partial)",
+                            detail: "+\(questPartialXP) XP • \(Int((progress * 100).rounded()))% progress carried"
+                        )
+                    } else {
+                        missedQuestDamageWeight += 1.0
+                    }
+                }
+                dailyQuests[index].status = .available
+                dailyQuests[index].currentProgress = 0
+                for subtaskIndex in dailyQuests[index].subtasks.indices {
+                    dailyQuests[index].subtasks[subtaskIndex].isCompleted = false
+                }
+                dailyQuests[index].expiresAt = dailyQuests[index].resolvedFrequency.nextResetDate(from: dailyQuests[index].expiresAt)
+                didChange = true
+            }
+        }
+
+        if partialCreditXP > 0 {
+            _ = awardXP(partialCreditXP)
+            HapticManager.shared.success()
+            NotificationManager.shared.sendSystemAlert(
+                title: "Partial Credit",
+                message: "Progress recognized. +\(partialCreditXP) XP awarded."
+            )
+            didChange = true
+        }
+
+        if missedQuestCount > 0 {
+            if consumeRestDayPassIfAvailable() {
+                // Planned rest day: no HP loss, streak preserved.
+            } else {
+                let usedStreakShield = consumeStreakShieldIfNeeded()
+                applyMissedQuestDamage(
+                    for: missedQuestCount,
+                    damageWeight: missedQuestDamageWeight,
+                    preserveStreak: usedStreakShield
+                )
+            }
+            didChange = true
+        }
+
+        if didChange {
+            save()
+        }
+    }
+
+    private func applyMissedQuestDamage(for missedQuestCount: Int, damageWeight: Double, preserveStreak: Bool) {
+        if !preserveStreak {
+            player.currentStreak = 0
+        }
+
+        let safeWeight = max(0, damageWeight)
+        let damage = max(1, Int((Double(GameFormulas.penaltyDamage(missedQuests: 1)) * safeWeight).rounded()))
+        player.currentHP = max(0, player.currentHP - damage)
+
+        if preserveStreak {
+            SystemMessageHelper.showInfo("Streak Shield Used", "Your streak was protected this cycle.")
+            NotificationManager.shared.sendSystemAlert(
+                title: "Streak Shield Activated",
+                message: "A missed day was absorbed. Streak remains intact."
+            )
+        }
+
+        if player.currentHP == 0 {
+            applyPenalty(reason: .missedDailyQuests(count: missedQuestCount))
+            if isDeathMechanicEnabled {
+                deathPenaltySummary = applyDeathConsequences(missedQuestCount: missedQuestCount)
+                HapticManager.shared.deathPenaltyApplied()
+                SystemMessageHelper.showWarning("You were defeated. Death penalties applied.")
+            } else {
+                player.currentHP = player.maxHP
+                HapticManager.shared.warning()
+                SystemMessageHelper.showWarning("HP depleted. Death penalties are disabled.")
+            }
+        }
+    }
+
+    private func consumeStreakShieldIfNeeded() -> Bool {
+        guard player.currentStreak > 0, player.streakShieldCharges > 0 else { return false }
+        player.streakShieldCharges -= 1
+        logActivity(
+            type: .rewardConsumed,
+            title: "Streak Shield",
+            detail: "Protected streak from one missed cycle. Remaining: \(player.streakShieldCharges)"
+        )
+        return true
+    }
+
+    private func consumeRestDayPassIfAvailable() -> Bool {
+        guard player.restDayPassCharges > 0 else { return false }
+        player.restDayPassCharges -= 1
+        logActivity(
+            type: .rewardConsumed,
+            title: "Rest Day Pass",
+            detail: "Planned rest day. No HP lost, streak preserved. Remaining: \(player.restDayPassCharges)"
+        )
+        SystemMessageHelper.showInfo("Rest Day Pass Used", "Missed quests were excused. No HP lost, streak intact.")
+        NotificationManager.shared.sendSystemAlert(
+            title: "Rest Day Pass Used",
+            message: "Your rest day absorbed the missed quests. No HP lost, streak preserved."
+        )
+        return true
+    }
+
+    private var isDeathMechanicEnabled: Bool {
+        UserDefaults.standard.object(forKey: Self.deathMechanicEnabledKey) as? Bool ?? true
+    }
+
+    private func applyDeathConsequences(missedQuestCount: Int) -> DeathPenaltySummary {
+        let previousRank = player.rank
+        let statLossRatio = statLossRatio(for: previousRank)
+
+        var statLosses: [DeathPenaltyStatLoss] = []
+        for type in StatType.allCases {
+            guard var stat = player.stats[type] else { continue }
+            let before = stat.totalValue
+
+            let baseLoss = lossAmount(for: stat.baseValue, ratio: statLossRatio)
+            let bonusLoss = lossAmount(for: stat.bonusValue, ratio: statLossRatio)
+
+            stat.baseValue = max(0, stat.baseValue - baseLoss)
+            stat.bonusValue = max(0, stat.bonusValue - bonusLoss)
+            player.stats[type] = stat
+
+            let after = stat.totalValue
+            if after < before {
+                statLosses.append(DeathPenaltyStatLoss(stat: type, before: before, after: after))
+            }
+        }
+
+        let goldBefore = player.gold
+        let goldLoss = goldBefore > 0 ? Int((Double(goldBefore) * 0.20).rounded(.up)) : 0
+        player.gold = max(0, goldBefore - goldLoss)
+
+        let demotionResult = demotePlayerRankByOne()
+        player.currentHP = player.maxHP
+
+        return DeathPenaltySummary(
+            missedQuestCount: missedQuestCount,
+            previousRank: previousRank,
+            newRank: demotionResult.newRank,
+            wasDemoted: demotionResult.wasDemoted,
+            statLossPercent: Int((statLossRatio * 100).rounded()),
+            statLosses: statLosses,
+            goldLost: goldLoss,
+            goldRemaining: player.gold
+        )
+    }
+
+    private func statLossRatio(for rank: PlayerRank) -> Double {
+        switch rank {
+        case .e: return 0.05
+        case .d: return 0.08
+        case .c: return 0.10
+        case .b: return 0.12
+        case .a: return 0.15
+        case .s: return 0.18
+        case .ss: return 0.22
+        case .sss: return 0.26
+        case .monarch: return 0.30
+        }
+    }
+
+    private func lossAmount(for value: Int, ratio: Double) -> Int {
+        guard value > 0 else { return 0 }
+        return max(1, Int((Double(value) * ratio).rounded(.up)))
+    }
+
+    private func demotePlayerRankByOne() -> (newRank: PlayerRank, wasDemoted: Bool) {
+        let ranks = PlayerRank.allCases
+        let currentRank = player.rank
+        guard let currentIndex = ranks.firstIndex(of: currentRank), currentIndex > 0 else {
+            return (currentRank, false)
+        }
+
+        let demotedRank = ranks[currentIndex - 1]
+        let targetLevel = max(1, demotedRank.minLevel)
+        player.level = targetLevel
+        syncClassTitle()
+
+        let lowerBoundXP = GameFormulas.xpRequired(forLevel: targetLevel)
+        let upperBoundXP = max(lowerBoundXP, GameFormulas.xpRequired(forLevel: targetLevel + 1) - 1)
+        player.currentXP = min(max(player.currentXP, lowerBoundXP), upperBoundXP)
+
+        return (demotedRank, true)
+    }
+
+    private func syncBossLinksWithQuests() {
+        let allQuestIDs = Set(dailyQuests.map(\.id))
+        var didChange = false
+
+        for index in activeBossFights.indices {
+            let existing = activeBossFights[index].linkedQuestIDs
+            let filtered = existing.filter { allQuestIDs.contains($0) }
+            if filtered.count != existing.count {
+                activeBossFights[index].linkedQuestIDs = filtered
+                didChange = true
+            }
+        }
+
+        if didChange {
+            save()
+        }
+    }
+
+    private func syncBossLink(for quest: DailyQuest) {
+        for index in activeBossFights.indices {
+            activeBossFights[index].linkedQuestIDs.removeAll { $0 == quest.id }
+        }
+
+        if let linkedBossID = quest.linkedBossID,
+           let bossIndex = activeBossFights.firstIndex(where: { $0.id == linkedBossID }) {
+            activeBossFights[bossIndex].linkedQuestIDs.append(quest.id)
+            activeBossFights[bossIndex].linkedQuestIDs = Array(Set(activeBossFights[bossIndex].linkedQuestIDs))
+            if activeBossFights[bossIndex].dynamicGoal != nil,
+               let questIndex = dailyQuests.firstIndex(where: { $0.id == quest.id }) {
+                dailyQuests[questIndex].linkedDynamicBossID = linkedBossID
+            }
+        }
+    }
+
+    private func makeGeneratedQuest(for boss: BossFight, goal: DynamicBossGoal) -> DailyQuest {
+        let cadenceTarget = max(0.1, goal.perCadenceTarget)
+        let unit = goal.unitLabel
+        let title: String
+        let description: String
+        let trackingType: QuestTrackingType
+        let healthKitIdentifier: String?
+
+        switch goal.type {
+        case .weight:
+            title = "\(boss.title): \(goal.cadence.rawValue) Weight Progress"
+            description = "Move at least \(formatGoalAmount(cadenceTarget, unit: unit)) toward your weight goal this \(goal.cadence.rawValue.lowercased())."
+            trackingType = .manual
+            healthKitIdentifier = nil
+        case .bodyFat:
+            title = "\(boss.title): \(goal.cadence.rawValue) Body Fat Progress"
+            description = "Reduce body fat by \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased())."
+            trackingType = .manual
+            healthKitIdentifier = nil
+        case .savings:
+            title = "\(boss.title): \(goal.cadence.rawValue) Savings Deposit"
+            description = "Deposit at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to damage the savings boss."
+            trackingType = .manual
+            healthKitIdentifier = nil
+        case .stepCount:
+            title = "\(boss.title): \(goal.cadence.rawValue) Step Push"
+            description = "Accumulate at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to push this boss back."
+            trackingType = .healthKit
+            healthKitIdentifier = "stepCount"
+        case .sleepConsistency:
+            title = "\(boss.title): \(goal.cadence.rawValue) Sleep Goal"
+            description = "Log at least \(formatGoalAmount(cadenceTarget, unit: unit)) of sleep this \(goal.cadence.rawValue.lowercased()) to damage the boss."
+            trackingType = .healthKit
+            healthKitIdentifier = "sleepHours"
+        case .hydration:
+            title = "\(boss.title): \(goal.cadence.rawValue) Hydration Goal"
+            description = "Drink at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to chip away at the boss."
+            trackingType = .healthKit
+            healthKitIdentifier = "waterGlasses"
+        case .mindfulness:
+            title = "\(boss.title): \(goal.cadence.rawValue) Mindfulness Goal"
+            description = "Complete at least \(formatGoalAmount(cadenceTarget, unit: unit)) of mindfulness this \(goal.cadence.rawValue.lowercased())."
+            trackingType = .healthKit
+            healthKitIdentifier = "mindfulMinutes"
+        case .distance:
+            title = "\(boss.title): \(goal.cadence.rawValue) Distance Goal"
+            description = "Cover at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to damage the boss."
+            trackingType = .healthKit
+            healthKitIdentifier = "distanceWalkingRunning"
+        case .workoutConsistency:
+            title = "\(boss.title): \(goal.cadence.rawValue) Workout Count"
+            description = "Complete at least \(formatGoalAmount(cadenceTarget, unit: unit)) this \(goal.cadence.rawValue.lowercased()) to damage this boss."
+            trackingType = .healthKit
+            healthKitIdentifier = "HKWorkoutType"
+        }
+        return DailyQuest(
+            title: title,
+            description: description,
+            difficulty: boss.difficulty,
+            status: .available,
+            targetStats: goal.type.defaultStatTargets,
+            frequency: goal.cadence.questFrequency,
+            trackingType: trackingType,
+            currentProgress: 0,
+            targetValue: cadenceTarget,
+            unit: unit,
+            healthKitIdentifier: healthKitIdentifier,
+            linkedBossID: boss.id,
+            linkedDynamicBossID: boss.id
+        )
+    }
+
+    private func adjustGeneratedGoalQuestTargets(referenceDate: Date = Date()) {
+        var didChange = false
+
+        for bossIndex in activeBossFights.indices {
+            guard let goal = activeBossFights[bossIndex].dynamicGoal else {
+                continue
+            }
+
+            let dynamicLinkedQuestIDs = dynamicLinkedQuestIDs(for: activeBossFights[bossIndex])
+            guard !dynamicLinkedQuestIDs.isEmpty else { continue }
+            let questCount = max(1, dynamicLinkedQuestIDs.count)
+            let adjustedTarget = adjustedCadenceTarget(for: goal, deadline: activeBossFights[bossIndex].deadline, now: referenceDate)
+            let perQuestTarget = adjustedTarget / Double(questCount)
+            let roundedTarget = max(0.1, (perQuestTarget * 10).rounded() / 10)
+            let targetFrequency = goal.cadence.questFrequency
+
+            for questID in dynamicLinkedQuestIDs {
+                guard let linkedQuestIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else {
+                    continue
+                }
+                if abs(dailyQuests[linkedQuestIndex].targetValue - roundedTarget) > 0.0001 {
+                    dailyQuests[linkedQuestIndex].targetValue = roundedTarget
+                    didChange = true
+                }
+                if dailyQuests[linkedQuestIndex].frequency != targetFrequency {
+                    dailyQuests[linkedQuestIndex].frequency = targetFrequency
+                    didChange = true
+                }
+            }
+        }
+
+        if didChange {
+            save()
+        }
+    }
+
+    private func dynamicLinkedQuestIDs(for boss: BossFight) -> [UUID] {
+        let bossLinkedSet = Set(boss.linkedQuestIDs)
+        return dailyQuests
+            .filter { quest in
+                quest.linkedDynamicBossID == boss.id && bossLinkedSet.contains(quest.id)
+            }
+            .map(\.id)
+    }
+
+    private func tagDynamicLinkedQuests(for bossID: UUID, linkedQuestIDs: [UUID]) {
+        let linkedSet = Set(linkedQuestIDs)
+        for index in dailyQuests.indices where linkedSet.contains(dailyQuests[index].id) {
+            dailyQuests[index].linkedDynamicBossID = bossID
+        }
+    }
+
+    private func adjustedCadenceTarget(for goal: DynamicBossGoal, deadline: Date?, now: Date) -> Double {
+        guard let deadline, deadline > now else {
+            return goal.perCadenceTarget
+        }
+
+        let periodsLeft: Int = {
+            switch goal.cadence {
+            case .daily:
+                let days = Calendar.current.dateComponents([.day], from: now, to: deadline).day ?? 0
+                return max(1, days)
+            case .weekly:
+                let days = Calendar.current.dateComponents([.day], from: now, to: deadline).day ?? 0
+                return max(1, Int(ceil(Double(days) / 7.0)))
+            case .monthly:
+                let months = Calendar.current.dateComponents([.month], from: now, to: deadline).month ?? 0
+                return max(1, months)
+            }
+        }()
+
+        let dynamicTarget = goal.remainingAmount / Double(periodsLeft)
+        return max(goal.perCadenceTarget, dynamicTarget)
+    }
+
+    private func formatGoalAmount(_ value: Double, unit: String) -> String {
+        if unit == "$" {
+            return String(format: "$%.0f", value)
+        }
+        if value.rounded() == value {
+            return "\(Int(value))\(unit)"
+        }
+        return String(format: "%.1f%@", value, unit)
+    }
+
+    private func syncLocationGeofences() {
+        let locationManager = LocationManager.shared
+
+        for quest in dailyQuests {
+            locationManager.upsertQuestGeofence(for: quest)
+        }
+
+        let validQuestIDs = Set(dailyQuests.map(\.id))
+        for active in locationManager.activeGeofences {
+            guard let questID = active.questID else { continue }
+            if !validQuestIDs.contains(questID) {
+                locationManager.removeGeofence(for: active)
+            }
+        }
+    }
+
+    private func migrateLegacyDefaultQuestTemplatesIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: Self.defaultQuestMigrationKey) else { return }
+
+        defer {
+            defaults.set(true, forKey: Self.defaultQuestMigrationKey)
+        }
+
+        guard !dailyQuests.isEmpty else { return }
+
+        let templateTitles = Set(DefaultQuests.dailyQuests.map(\.title))
+        let currentTitles = Set(dailyQuests.map(\.title))
+
+        if currentTitles.isSubset(of: templateTitles) {
+            dailyQuests = []
+        }
+    }
+
+    private func migrateLegacyStatBaselineIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: Self.zeroStatBaselineMigrationKey) else { return }
+
+        defer {
+            defaults.set(true, forKey: Self.zeroStatBaselineMigrationKey)
+        }
+
+        // Only migrate untouched legacy players that still have seed values.
+        let isLegacySeededProfile = StatType.allCases.allSatisfy { type in
+            guard let stat = player.stats[type] else { return false }
+            return stat.baseValue == 10 && stat.bonusValue == 0 && stat.experience == 0
+        }
+
+        guard isLegacySeededProfile else { return }
+
+        for type in StatType.allCases {
+            guard var stat = player.stats[type] else { continue }
+            stat.baseValue = 0
+            player.stats[type] = stat
+        }
+    }
+
+    // MARK: - HealthKit Integration
+
+    private func setupLocationQuestObservers() {
+        NotificationCenter.default
+            .publisher(for: .locationVisitCompleted)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                self?.handleLocationVisitNotification(notification)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleLocationVisitNotification(_ notification: Notification) {
+        if let questID = notification.userInfo?["questID"] as? UUID,
+           let quest = dailyQuests.first(where: { $0.id == questID && $0.trackingType == .location && $0.status != .completed }) {
+            _ = completeQuest(quest)
+            return
+        }
+
+        guard let visit = notification.userInfo?["visit"] as? LocationVisit else {
+            return
+        }
+
+        let visitLocation = CLLocation(latitude: visit.location.latitude, longitude: visit.location.longitude)
+        if let quest = dailyQuests.first(where: { quest in
+            guard quest.trackingType == .location,
+                  quest.status != .completed,
+                  let coordinate = quest.locationCoordinate else {
+                return false
+            }
+
+            let questLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            return visitLocation.distance(from: questLocation) <= coordinate.radius
+        }) {
+            _ = completeQuest(quest)
+        }
+    }
+
+    /// Set up observers for HealthKit data changes
+    private func setupHealthKitObservers() {
+        NotificationCenter.default
+            .publisher(for: .healthKitDataDidUpdate)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.updateHealthKitQuests()
+                }
+            }
+            .store(in: &cancellables)
+
+        // Listen for health data updates
+        Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.updateHealthKitQuests()
+            }
+        }
+    }
+
+    private func setupCloudKitSync() {
+        CloudKitSyncManager.shared.start()
+
+        NotificationCenter.default
+            .publisher(for: UIApplication.willEnterForegroundNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.syncFromCloudIfNeeded()
+                }
+            }
+            .store(in: &cancellables)
+
+        cloudSyncTimer = Timer.scheduledTimer(withTimeInterval: 120, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.syncFromCloudIfNeeded()
+            }
+        }
+
+        Task { @MainActor [weak self] in
+            await self?.syncFromCloudIfNeeded(force: true)
+        }
+    }
+
+    private func syncFromCloudIfNeeded(force: Bool = false) async {
+        guard let snapshot = await CloudKitSyncManager.shared.fetchLatestSnapshotIfNewer(force: force) else {
+            return
+        }
+        applyCloudSnapshot(snapshot)
+    }
+
+    private func applyCloudSnapshot(_ snapshot: CloudGameStateSnapshot) {
+        player = snapshot.player
+        dailyQuests = snapshot.dailyQuests
+        activeBossFights = snapshot.bossFights
+        recentActivity = snapshot.recentActivity
+
+        QuestDataManager.shared.overwriteQuestHistory(snapshot.questHistory)
+        LocationDataManager.shared.saveLocations(snapshot.trackedLocations)
+
+        refreshQuestCyclesIfNeeded()
+        syncBossLinksWithQuests()
+        syncLocationGeofences()
+        dailyQuests.forEach { NotificationManager.shared.scheduleQuestReminder(for: $0) }
+
+        save(syncToCloud: false)
+        CloudKitSyncManager.shared.markLocalStateApplied(at: snapshot.updatedAt)
+        SystemMessageHelper.showInfo("Cloud Sync", "Pulled latest progress from iCloud.")
+    }
+
+    private func dynamicGoalCurrentValue(
+        for boss: BossFight,
+        healthManager: HealthKitManager
+    ) async -> Double? {
+        guard let goal = boss.dynamicGoal else { return nil }
+        let rawValue: Double?
+
+        switch goal.type {
+        case .weight:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = healthManager.currentBodyWeightLB > 0 ? healthManager.currentBodyWeightLB : nil
+        case .bodyFat:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = healthManager.currentBodyFatPercent > 0 ? healthManager.currentBodyFatPercent : nil
+        case .savings:
+            rawValue = goal.currentValue
+        case .stepCount:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = Double(healthManager.todaySteps)
+        case .sleepConsistency:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = healthManager.todaySleepHours
+        case .hydration:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = healthManager.todayWaterGlasses
+        case .mindfulness:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = Double(healthManager.todayMindfulMinutes)
+        case .distance:
+            guard healthManager.isAuthorized else { return nil }
+            rawValue = healthManager.todayDistanceKM
+        case .workoutConsistency:
+            guard healthManager.isAuthorized else { return nil }
+            let start = cadenceStartDate(for: goal.cadence)
+            let workouts = await healthManager.fetchWorkoutCount(from: start, to: Date())
+            rawValue = Double(workouts)
+        }
+
+        guard let rawValue, rawValue.isFinite else { return nil }
+        return rawValue
+    }
+
+    private func cadenceStartDate(for cadence: GoalCadence, now: Date = Date()) -> Date {
+        let calendar = Calendar.current
+        switch cadence {
+        case .daily:
+            return calendar.startOfDay(for: now)
+        case .weekly:
+            return calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))
+                ?? calendar.startOfDay(for: now)
+        case .monthly:
+            return calendar.date(from: calendar.dateComponents([.year, .month], from: now))
+                ?? calendar.startOfDay(for: now)
+        }
+    }
+
+    private func syncDynamicBossGoals() async {
+        let healthManager = HealthKitManager.shared
+        var didChange = false
+        var defeatedBossIDs: [UUID] = []
+
+        let dynamicBossIDs = activeBossFights
+            .filter { $0.dynamicGoal != nil }
+            .map(\.id)
+
+        for bossID in dynamicBossIDs {
+            guard let snapshotIndex = activeBossFights.firstIndex(where: { $0.id == bossID }) else { continue }
+            let bossSnapshot = activeBossFights[snapshotIndex]
+
+            guard let currentValue = await dynamicGoalCurrentValue(
+                for: bossSnapshot,
+                healthManager: healthManager
+            ) else {
+                continue
+            }
+
+            guard let bossIndex = activeBossFights.firstIndex(where: { $0.id == bossID }),
+                  activeBossFights[bossIndex].dynamicGoal != nil else { continue }
+
+            let wasDefeated = activeBossFights[bossIndex].isDefeated
+            let previousHP = activeBossFights[bossIndex].currentHP
+
+            activeBossFights[bossIndex].updateDynamicGoalCurrentValue(currentValue)
+
+            if activeBossFights[bossIndex].currentHP != previousHP {
+                didChange = true
+            }
+
+            if activeBossFights[bossIndex].isDefeated && !wasDefeated {
+                defeatedBossIDs.append(activeBossFights[bossIndex].id)
+            }
+        }
+
+        adjustGeneratedGoalQuestTargets()
+
+        for bossID in defeatedBossIDs {
+            if let defeatedBoss = activeBossFights.first(where: { $0.id == bossID }) {
+                handleBossDefeated(defeatedBoss)
+            }
+        }
+
+        if didChange {
+            save()
+        }
+    }
+
+    private func beginExternalRefreshCycle() -> UInt64 {
+        externalRefreshToken &+= 1
+        return externalRefreshToken
+    }
+
+    private func isExternalRefreshTokenCurrent(_ token: UInt64?) -> Bool {
+        guard let token else { return true }
+        return token == externalRefreshToken
+    }
+
+    @MainActor
+    func refreshExternalTrackingTransaction() async {
+        let token = beginExternalRefreshCycle()
+
+        if HealthKitManager.shared.isAuthorized {
+            await HealthKitManager.shared.refreshTodayData()
+        }
+        guard isExternalRefreshTokenCurrent(token) else { return }
+
+        await updateHealthKitQuests(refreshToken: token)
+        guard isExternalRefreshTokenCurrent(token) else { return }
+
+        save()
+    }
+
+    /// Update quest progress from HealthKit
+    func updateHealthKitQuests(refreshToken: UInt64? = nil) async {
+        guard isExternalRefreshTokenCurrent(refreshToken) else { return }
+        let healthManager = HealthKitManager.shared
+        var autoCompletedRewards: [(title: String, xp: Int, gold: Int)] = []
+
+        let healthKitQuestIDs = dailyQuests
+            .filter { $0.trackingType == .healthKit }
+            .map(\.id)
+
+        for questID in healthKitQuestIDs {
+            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
+            guard let questIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else { continue }
+            let questSnapshot = dailyQuests[questIndex]
+
+            let progress = await healthManager.checkQuestProgress(for: questSnapshot)
+            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
+
+            guard let latestIndex = dailyQuests.firstIndex(where: { $0.id == questID }) else { continue }
+            let sanitizedProgress = sanitizeProgress(progress)
+            dailyQuests[latestIndex].currentProgress = sanitizedProgress
+
+            // Auto-complete if 100%
+            if sanitizedProgress >= 1.0 && dailyQuests[latestIndex].status != .completed {
+                let completedTitle = dailyQuests[latestIndex].title
+                let completionResult = completeQuest(dailyQuests[latestIndex])
+                if completionResult.success {
+                    autoCompletedRewards.append((
+                        title: completedTitle,
+                        xp: completionResult.xpAwarded,
+                        gold: completionResult.goldAwarded
+                    ))
+                }
+            }
+        }
+
+        for reward in autoCompletedRewards {
+            guard isExternalRefreshTokenCurrent(refreshToken) else { return }
+            SystemMessageHelper.showQuestComplete(
+                title: reward.title,
+                xp: reward.xp,
+                gold: reward.gold
+            )
+        }
+
+        guard isExternalRefreshTokenCurrent(refreshToken) else { return }
+        await syncDynamicBossGoals()
+    }
+
+    // MARK: - Saving
+
+    /// Set up auto-save timer
+    private func setupAutoSave() {
+        autoSaveTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.refreshQuestCyclesIfNeeded()
+                self?.adjustGeneratedGoalQuestTargets()
+                self?.save()
+            }
+        }
+    }
+
+    /// Save all game data
+    func save(syncToCloud: Bool = true) {
+        syncClassTitle()
+        PlayerDataManager.shared.savePlayer(player)
+        QuestDataManager.shared.saveDailyQuests(dailyQuests)
+        QuestDataManager.shared.saveBossFights(activeBossFights)
+        ActivityLogDataManager.shared.saveActivityLog(recentActivity)
+        WidgetSnapshotStore.shared.publish(
+            player: player,
+            dailyQuests: dailyQuests,
+            bossFights: activeBossFights
+        )
+        NotificationManager.shared.refreshPersonalizedReminderPlan()
+        if syncToCloud {
+            CloudKitSyncManager.shared.queueUpload(
+                player: player,
+                dailyQuests: dailyQuests,
+                bossFights: activeBossFights,
+                recentActivity: recentActivity
+            )
+        }
+        if WCSession.isSupported() {
+            #if targetEnvironment(simulator)
+            // Skip watch snapshot publishes in simulator builds.
+            #else
+            let session = WCSession.default
+            if session.activationState == .activated,
+               session.isPaired,
+               session.isWatchAppInstalled {
+                WatchConnectivityManager.shared.publishSnapshot(
+                    player: player,
+                    quests: dailyQuests,
+                    activities: recentActivity
+                )
+            }
+            #endif
+        }
+    }
+
+    func recordExternalActivity(type: ActivityLogType, title: String, detail: String) {
+        logActivity(type: type, title: title, detail: detail)
+        save()
+    }
+
+    private func logActivity(type: ActivityLogType, title: String, detail: String) {
+        let entry = ActivityLogEntry(type: type, title: title, detail: detail)
+        ActivityLogDataManager.shared.appendActivity(entry)
+        recentActivity = ActivityLogDataManager.shared.loadActivityLog()
+    }
+
+    // MARK: - Achievement System
+
+    func achievementProgress(for achievementID: String) -> AchievementProgress {
+        switch achievementID {
+        case "grind_streak_3":
+            return AchievementProgress(current: player.longestStreak, target: 3)
+        case "grind_streak_14":
+            return AchievementProgress(current: player.longestStreak, target: 14)
+        case "grind_streak_30":
+            return AchievementProgress(current: player.longestStreak, target: 30)
+        case "arena_first_boss":
+            return AchievementProgress(current: player.defeatedBossCount, target: 1)
+        case "arena_boss_10":
+            return AchievementProgress(current: player.defeatedBossCount, target: 10)
+        case "scholar_training_5":
+            return AchievementProgress(current: player.dungeonsClearedCount, target: 5)
+        case "scholar_training_25":
+            return AchievementProgress(current: player.dungeonsClearedCount, target: 25)
+        case "vault_purchase_1":
+            return AchievementProgress(current: MarketplaceManager.shared.purchaseHistory.count, target: 1)
+        case "vault_purchase_10":
+            return AchievementProgress(current: MarketplaceManager.shared.purchaseHistory.count, target: 10)
+        case "vault_spend_1000":
+            let spent = MarketplaceManager.shared.purchaseHistory.reduce(0) { partial, purchase in
+                partial + purchase.reward.cost
+            }
+            return AchievementProgress(current: spent, target: 1000)
+        case "quests_complete_25":
+            return AchievementProgress(current: player.completedQuestCount, target: 25)
+        case "quests_complete_100":
+            return AchievementProgress(current: player.completedQuestCount, target: 100)
+        case "legend_max_stat_100":
+            let maxStatValue = player.stats.values.map(\.totalValue).max() ?? 0
+            return AchievementProgress(current: maxStatValue, target: 100)
+        default:
+            return AchievementProgress(current: 0, target: 1)
+        }
+    }
+
+    func evaluateAchievementsIfNeeded() {
+        var unlockedSet = Set(player.unlockedAchievements.map(\.id))
+        var unlockedThisPass: [AchievementDefinition] = []
+
+        for achievement in AchievementCatalog.all where !unlockedSet.contains(achievement.id) {
+            let progress = achievementProgress(for: achievement.id)
+            if progress.current >= progress.target {
+                player.unlockedAchievements.append(UnlockedAchievement(id: achievement.id, unlockedAt: Date()))
+                unlockedSet.insert(achievement.id)
+                unlockedThisPass.append(achievement)
+                applyAchievementReward(achievement)
+            }
+        }
+
+        guard !unlockedThisPass.isEmpty else { return }
+
+        player.unlockedAchievements.sort { $0.unlockedAt > $1.unlockedAt }
+        save()
+        HapticManager.shared.success()
+    }
+
+    private func applyAchievementReward(_ achievement: AchievementDefinition) {
+        if achievement.reward.xp > 0 {
+            _ = awardXP(achievement.reward.xp)
+        }
+
+        if achievement.scaledGoldReward > 0 {
+            player.gold += achievement.scaledGoldReward
+        }
+
+        if let title = achievement.reward.title, !player.unlockedTitles.contains(title) {
+            player.unlockedTitles.append(title)
+        }
+
+        let rewardText = achievement.rewardSummary
+
+        logActivity(
+            type: .achievementUnlocked,
+            title: achievement.title,
+            detail: rewardText
+        )
+
+        NotificationManager.shared.sendSystemAlert(
+            title: "[SYSTEM] Achievement Unlocked",
+            message: "\(achievement.title) • \(rewardText)"
+        )
+        SystemMessageHelper.showInfo("Achievement Unlocked", achievement.title)
+    }
+
+    private func prepareUndoSnapshot(for questTitle: String) {
+        questCompletionUndoTask?.cancel()
+        guard let encodedPlayer = try? JSONEncoder().encode(player) else {
+            clearQuestCompletionUndoSnapshot()
+            return
+        }
+
+        questCompletionUndoSnapshot = QuestCompletionUndoSnapshot(
+            encodedPlayer: encodedPlayer,
+            dailyQuests: dailyQuests,
+            activeBossFights: activeBossFights,
+            pendingLootBoxes: pendingLootBoxes,
+            pendingPenalties: pendingPenalties,
+            recentActivity: recentActivity,
+            questHistory: QuestDataManager.shared.loadQuestHistory(),
+            createdAt: Date(),
+            questTitle: questTitle
+        )
+        canUndoLatestQuestCompletion = true
+        lastUndoQuestTitle = questTitle
+    }
+
+    private func armQuestCompletionUndoWindow(for questTitle: String) {
+        canUndoLatestQuestCompletion = true
+        lastUndoQuestTitle = questTitle
+
+        questCompletionUndoTask?.cancel()
+        questCompletionUndoTask = Task { [weak self] in
+            guard let self else { return }
+            let delay = UInt64(self.questCompletionUndoWindow * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: delay)
+            await MainActor.run {
+                self.clearQuestCompletionUndoSnapshot()
+            }
+        }
+    }
+
+    private func clearQuestCompletionUndoSnapshot() {
+        questCompletionUndoTask?.cancel()
+        questCompletionUndoTask = nil
+        questCompletionUndoSnapshot = nil
+        canUndoLatestQuestCompletion = false
+        lastUndoQuestTitle = nil
+    }
+
+}
+
+// MARK: - Quest Completion Result
+
+struct QuestCompletionResult {
+    let success: Bool
+    let message: String
+    var xpAwarded: Int = 0
+    var goldAwarded: Int = 0
+    var statGains: [(StatType, Int)] = []
+    var isCritical: Bool = false
+    var lootBox: LootBox?
+    var leveledUp: LevelUpData?
+    var isQuestComplete: Bool = true
+}
+
+// MARK: - Level Up Data
+
+struct LevelUpData {
+    let previousLevel: Int
+    let newLevel: Int
+    let previousRank: PlayerRank
+    let newRank: PlayerRank
+    let rankUp: Bool
+    let statsUnlocked: [StatType]
+}
+
+struct DeathPenaltySummary: Identifiable {
+    let id = UUID()
+    let missedQuestCount: Int
+    let previousRank: PlayerRank
+    let newRank: PlayerRank
+    let wasDemoted: Bool
+    let statLossPercent: Int
+    let statLosses: [DeathPenaltyStatLoss]
+    let goldLost: Int
+    let goldRemaining: Int
+}
+
+struct DeathPenaltyStatLoss: Identifiable {
+    let id = UUID()
+    let stat: StatType
+    let before: Int
+    let after: Int
+
+    var lost: Int {
+        max(0, before - after)
+    }
+}
+
+// MARK: - Penalty Reason
+
+enum PenaltyReason {
+    case missedDailyQuests(count: Int)
+    case dungeonFailed
+    case streakBroken
+    case custom(String)
+
+    var description: String {
+        switch self {
+        case .missedDailyQuests(let count):
+            return "Failed to complete \(count) daily quest\(count == 1 ? "" : "s")"
+        case .dungeonFailed:
+            return "Abandoned dungeon before completion"
+        case .streakBroken:
+            return "Daily streak broken"
+        case .custom(let reason):
+            return reason
+        }
+    }
+}

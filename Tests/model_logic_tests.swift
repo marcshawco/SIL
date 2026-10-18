@@ -1,0 +1,339 @@
+import Foundation
+import SwiftUI
+
+@inline(__always)
+private func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
+    if !condition() {
+        fputs("FAIL: \(message)\n", stderr)
+        exit(1)
+    }
+}
+
+@main
+struct ModelLogicTestsMain {
+    static func main() {
+        testPlayerStatsStartAtZero()
+        testPlayerHPDefaults()
+        testPlayerXPProgressClamping()
+        testDailyQuestIdentityPreservation()
+        testLegacyRemovedTrackingDecodesAsManual()
+        testQuestFrequencyRollovers()
+        testLocationQuestMetadata()
+        testOptionalQuestFlags()
+        testOptionalQuestBackwardCompatibleDecoding()
+        testQuestSubtaskRewardDistribution()
+        testQuestSubtaskBackwardCompatibleDecoding()
+        testLinkedQuestBossDamage()
+        testDynamicBossGoalTypeMetadata()
+        testDynamicBossGoalProgressMath()
+        testQuestMetricProgressFormatting()
+        testQuestHistoryOverwriteRoundTrip()
+        print("All model logic tests passed")
+    }
+
+    private static func testPlayerStatsStartAtZero() {
+        let player = Player(name: "Tester")
+        for type in StatType.allCases {
+            let stat = player.stats[type]
+            expect(stat != nil, "Player should have stat for \(type.rawValue)")
+            expect(stat?.baseValue == 0, "Stat \(type.rawValue) should start at 0")
+            expect(stat?.bonusValue == 0, "Stat \(type.rawValue) bonus should start at 0")
+            expect(stat?.experience == 0, "Stat \(type.rawValue) XP should start at 0")
+        }
+    }
+
+    private static func testPlayerHPDefaults() {
+        let player = Player(name: "Tester")
+        expect(player.maxHP == 100, "Player maxHP should default to 100")
+        expect(player.currentHP == 100, "Player currentHP should default to 100")
+        expect(abs(player.hpProgress - 1.0) < 0.0001, "HP progress should be full at initialization")
+    }
+
+    private static func testPlayerXPProgressClamping() {
+        let player = Player(name: "Tester")
+        expect(player.xpProgress >= 0 && player.xpProgress <= 1, "Level 1 XP progress should be clamped to 0...1")
+
+        player.level = 3
+        player.currentXP = 0
+        expect(player.xpProgress == 0, "XP progress should clamp to 0 when XP is below the current level floor")
+
+        player.currentXP = Int.max / 1000
+        expect(player.xpProgress <= 1, "XP progress should clamp to 1 for very large XP values")
+    }
+
+    private static func testDailyQuestIdentityPreservation() {
+        let fixedID = UUID()
+        let createdAt = Date(timeIntervalSince1970: 1000)
+        let expiresAt = Date(timeIntervalSince1970: 5000)
+        let quest = DailyQuest(
+            id: fixedID,
+            title: "Edited Quest",
+            description: "desc",
+            difficulty: .normal,
+            status: .inProgress,
+            targetStats: [.intelligence],
+            trackingType: .manual,
+            currentProgress: 0.25,
+            targetValue: 10,
+            unit: "minutes",
+            createdAt: createdAt,
+            expiresAt: expiresAt
+        )
+
+        expect(quest.id == fixedID, "DailyQuest initializer should preserve provided ID")
+        expect(quest.status == .inProgress, "DailyQuest initializer should preserve provided status")
+        expect(abs(quest.currentProgress - 0.25) < 0.0001, "DailyQuest initializer should preserve provided progress")
+        expect(quest.createdAt == createdAt, "DailyQuest initializer should preserve provided creation date")
+        expect(quest.expiresAt == expiresAt, "DailyQuest initializer should preserve provided expiry date")
+    }
+
+    private static func testLegacyRemovedTrackingDecodesAsManual() {
+        let quest = DailyQuest(
+            title: "Legacy Usage Quest",
+            description: "desc",
+            difficulty: .normal,
+            targetStats: [.intelligence],
+            trackingType: .manual,
+            targetValue: 30,
+            unit: "minutes"
+        )
+
+        do {
+            let encoded = try JSONEncoder().encode(quest)
+            guard var jsonObject = try JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
+                expect(false, "Failed to parse encoded quest JSON")
+                return
+            }
+            jsonObject["trackingType"] = "screen" + "Time"
+            let legacyData = try JSONSerialization.data(withJSONObject: jsonObject)
+            let decoded = try JSONDecoder().decode(DailyQuest.self, from: legacyData)
+            expect(decoded.trackingType == .manual, "Legacy removed tracking should decode as manual")
+        } catch {
+            expect(false, "Legacy removed tracking quest decode should not fail: \(error)")
+        }
+    }
+
+    private static func testQuestFrequencyRollovers() {
+        let referenceDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let hourlyReset = QuestFrequency.hourly.nextResetDate(from: referenceDate)
+        let dailyReset = QuestFrequency.daily.nextResetDate(from: referenceDate)
+        let weeklyReset = QuestFrequency.weekly.nextResetDate(from: referenceDate)
+
+        expect(hourlyReset > referenceDate, "Hourly reset should be in the future")
+        expect(dailyReset > hourlyReset, "Daily reset should be after hourly reset")
+        expect(weeklyReset > dailyReset, "Weekly reset should be after daily reset")
+    }
+
+    private static func testLocationQuestMetadata() {
+        let reminderTime = Date(timeIntervalSince1970: 2_000_000_000)
+        let quest = DailyQuest(
+            title: "Arrive at Gym",
+            description: "Location quest",
+            difficulty: .normal,
+            targetStats: [.agility],
+            frequency: .weekly,
+            trackingType: .location,
+            targetValue: 1,
+            unit: "visits",
+            locationCoordinate: LocationCoordinate(
+                latitude: 37.33182,
+                longitude: -122.03118,
+                radius: 804.67,
+                locationName: "Apple Park"
+            ),
+            locationAddress: "1 Apple Park Way, Cupertino, CA",
+            linkedBossID: UUID(),
+            reminderEnabled: true,
+            reminderTime: reminderTime
+        )
+
+        expect(quest.resolvedFrequency == .weekly, "Quest should persist selected frequency")
+        expect(quest.locationCoordinate?.radius == 804.67, "Location quest should persist configured radius")
+        expect(quest.locationAddress == "1 Apple Park Way, Cupertino, CA", "Location address should persist")
+        expect(quest.reminderEnabled, "Reminder flag should persist")
+        expect(quest.reminderTime == reminderTime, "Reminder time should persist")
+        expect(quest.linkedBossID != nil, "Linked boss ID should persist")
+    }
+
+    private static func testOptionalQuestFlags() {
+        let optionalQuest = DailyQuest(
+            title: "Stretch",
+            description: "XP only",
+            difficulty: .easy,
+            targetStats: [.vitality],
+            isOptional: true
+        )
+
+        expect(optionalQuest.isOptional, "Optional flag should persist on DailyQuest")
+    }
+
+    private static func testOptionalQuestBackwardCompatibleDecoding() {
+        let sourceQuest = DailyQuest(
+            title: "Legacy Quest",
+            description: "Legacy payload without optional flag",
+            difficulty: .normal,
+            targetStats: [.intelligence],
+            trackingType: .manual
+        )
+
+        do {
+            let encoded = try JSONEncoder().encode(sourceQuest)
+            guard var jsonObject = try JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
+                expect(false, "Failed to parse encoded quest JSON")
+                return
+            }
+            jsonObject.removeValue(forKey: "isOptional")
+            let legacyData = try JSONSerialization.data(withJSONObject: jsonObject)
+
+            let decoded = try JSONDecoder().decode(DailyQuest.self, from: legacyData)
+            expect(decoded.isOptional == false, "Legacy quests without isOptional key should default to false")
+        } catch {
+            expect(false, "Legacy quest decode should not fail: \(error)")
+        }
+    }
+
+    private static func testQuestSubtaskRewardDistribution() {
+        let quest = DailyQuest(
+            title: "Study Session",
+            description: "Four parts",
+            difficulty: .normal,
+            targetStats: [.intelligence, .strength],
+            subtasks: [
+                QuestSubtask(title: "Read"),
+                QuestSubtask(title: "Notes"),
+                QuestSubtask(title: "Practice"),
+                QuestSubtask(title: "Review")
+            ]
+        )
+
+        let xpTotal = quest.subtasks.indices.reduce(0) { $0 + quest.subtaskXPReward(at: $1) }
+        let goldTotal = quest.subtasks.indices.reduce(0) { $0 + quest.subtaskGoldReward(at: $1) }
+        let statTotal = quest.subtasks.indices.reduce(0) { $0 + quest.subtaskStatXPReward(at: $1) }
+
+        expect(quest.hasSubtasks, "Quest should report that it has subtasks")
+        expect(quest.displayProgress == "0/4 subtasks", "Subtask quests should display subtask progress")
+        expect(xpTotal == quest.xpReward, "Subtask XP shares should sum to full quest XP")
+        expect(goldTotal == quest.goldReward, "Subtask Gold shares should sum to full quest Gold")
+        expect(statTotal == GameFormulas.statXP(difficulty: quest.difficulty), "Subtask stat XP shares should sum to full quest stat XP")
+    }
+
+    private static func testQuestSubtaskBackwardCompatibleDecoding() {
+        let sourceQuest = DailyQuest(
+            title: "Legacy Quest",
+            description: "Legacy payload without subtasks",
+            difficulty: .normal,
+            targetStats: [.intelligence],
+            trackingType: .manual
+        )
+
+        do {
+            let encoded = try JSONEncoder().encode(sourceQuest)
+            guard var jsonObject = try JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
+                expect(false, "Failed to parse encoded quest JSON")
+                return
+            }
+            jsonObject.removeValue(forKey: "subtasks")
+            let legacyData = try JSONSerialization.data(withJSONObject: jsonObject)
+
+            let decoded = try JSONDecoder().decode(DailyQuest.self, from: legacyData)
+            expect(decoded.subtasks.isEmpty, "Legacy quests without subtasks key should default to an empty list")
+        } catch {
+            expect(false, "Legacy subtask quest decode should not fail: \(error)")
+        }
+    }
+
+    private static func testLinkedQuestBossDamage() {
+        let linkedQuest = DailyQuest(
+            title: "Linked Quest",
+            description: "desc",
+            difficulty: .hard,
+            targetStats: [.willpower]
+        )
+
+        var boss = BossFight(
+            title: "Test Boss",
+            description: "d",
+            difficulty: .hard,
+            targetStats: [.willpower],
+            maxHP: 100,
+            linkedQuestIDs: [linkedQuest.id],
+            deadline: nil
+        )
+
+        let hpBefore = boss.currentHP
+        let damageResult = boss.dealLinkedQuestDamage(from: linkedQuest, playerLevel: 5)
+        expect(damageResult.damage > 0, "Linked quest should deal positive damage")
+        expect(boss.currentHP < hpBefore, "Boss HP should decrease after linked quest damage")
+    }
+
+    private static func testDynamicBossGoalTypeMetadata() {
+        expect(DynamicBossGoalType.workoutConsistency.isHealthKitDriven, "Workout consistency should be HealthKit-driven")
+        expect(!DynamicBossGoalType.savings.isHealthKitDriven, "Savings should remain manually updated")
+    }
+
+    private static func testDynamicBossGoalProgressMath() {
+        let workout = DynamicBossGoal(
+            type: .workoutConsistency,
+            startValue: 0,
+            targetValue: 4,
+            currentValue: 2,
+            cadence: .weekly,
+            perCadenceTarget: 4,
+            generatedQuestID: nil,
+            lastUpdatedAt: nil
+        )
+        expect(abs(workout.normalizedProgress - 0.5) < 0.0001, "Workout dynamic goal should report 50% progress at 2/4 workouts")
+
+        let decreasingGoal = DynamicBossGoal(
+            type: .weight,
+            startValue: 180,
+            targetValue: 160,
+            currentValue: 170,
+            cadence: .weekly,
+            perCadenceTarget: 1,
+            generatedQuestID: nil,
+            lastUpdatedAt: nil
+        )
+        expect(abs(decreasingGoal.normalizedProgress - 0.5) < 0.0001, "Decreasing dynamic goals should report progress toward lower targets")
+    }
+
+    private static func testQuestMetricProgressFormatting() {
+        expect(QuestProgressFormatter.metricDisplay(0.0) == "0", "Metric formatter should preserve zero")
+        expect(QuestProgressFormatter.metricDisplay(0.04) == "0", "Metric formatter should round tiny values cleanly")
+        expect(QuestProgressFormatter.metricDisplay(0.12) == "0.1", "Metric formatter should keep one decimal for partial progress")
+        expect(QuestProgressFormatter.metricDisplay(2.0) == "2", "Metric formatter should render whole numbers as integers")
+        expect(QuestProgressFormatter.metricDisplay(2.56) == "2.6", "Metric formatter should round to one decimal place")
+    }
+
+    private static func testQuestHistoryOverwriteRoundTrip() {
+        let manager = QuestDataManager.shared
+        let originalHistory = manager.loadQuestHistory()
+
+        let testQuest = DailyQuest(
+            title: "History Test Quest",
+            description: "history",
+            difficulty: .easy,
+            targetStats: [.intelligence]
+        )
+
+        let expected = QuestHistoryRecord(
+            questId: testQuest.id,
+            questTitle: testQuest.title,
+            questType: testQuest.questType,
+            difficulty: testQuest.difficulty,
+            completedAt: Date(timeIntervalSince1970: 1_700_000_123),
+            xpAwarded: 11,
+            goldAwarded: 2
+        )
+
+        manager.overwriteQuestHistory([expected])
+        let loaded = manager.loadQuestHistory()
+
+        expect(loaded.count == 1, "Quest history overwrite should replace records")
+        expect(loaded[0].questId == expected.questId, "Quest history overwrite should preserve quest id")
+        expect(loaded[0].xpAwarded == expected.xpAwarded, "Quest history overwrite should preserve XP")
+        expect(loaded[0].goldAwarded == expected.goldAwarded, "Quest history overwrite should preserve gold")
+
+        manager.overwriteQuestHistory(originalHistory)
+    }
+}
