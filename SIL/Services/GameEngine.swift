@@ -46,6 +46,10 @@ class GameEngine: ObservableObject {
     @Published private(set) var canUndoLatestQuestCompletion = false
     @Published private(set) var lastUndoQuestTitle: String?
     @Published var deathPenaltySummary: DeathPenaltySummary?
+    /// The habit that was just closed, for the completion overlay. Set by
+    /// `completeQuest` so every call site gets the moment, not just the one
+    /// screen that happens to inspect the result.
+    @Published var lastCompletion: SILCompletion?
 
     // MARK: - Private Properties
 
@@ -224,6 +228,18 @@ class GameEngine: ObservableObject {
         armQuestCompletionUndoWindow(for: completedQuest.title)
         HapticManager.shared.questCompleted(isCritical: isCritical)
 
+        let statGain = GameFormulas.statXP(difficulty: completedQuest.difficulty)
+        lastCompletion = SILCompletion(
+            title: completedQuest.title,
+            isCritical: isCritical,
+            progress: finalXP,
+            credits: gold,
+            attribute: completedQuest.targetStats.first.map(SILAttribute.containing) ?? .energy,
+            attributeGain: statGain,
+            goalName: linkedGoalName(for: completedQuest),
+            remainingToday: dailyQuests.filter { $0.status != .completed && $0.status != .expired }.count
+        )
+
         return QuestCompletionResult(
             success: true,
             message: isCritical ? "CRITICAL SUCCESS!" : "Quest Complete!",
@@ -234,6 +250,12 @@ class GameEngine: ObservableObject {
             lootBox: lootBox,
             leveledUp: leveledUp ? lastLevelUpData : nil
         )
+    }
+
+    /// The title of the goal a habit feeds, if it feeds one.
+    private func linkedGoalName(for quest: DailyQuest) -> String? {
+        guard let id = quest.linkedBossID ?? quest.linkedDynamicBossID else { return nil }
+        return activeBossFights.first { $0.id == id }?.title
     }
 
     func completeQuestSubtask(
@@ -2104,6 +2126,32 @@ class GameEngine: ObservableObject {
 }
 
 // MARK: - Quest Completion Result
+
+/// What the completion overlay needs to say about a habit that just closed.
+struct SILCompletion: Identifiable, Equatable {
+    let id = UUID()
+    let title: String
+    let isCritical: Bool
+    let progress: Int
+    let credits: Int
+    let attribute: SILAttribute
+    let attributeGain: Int
+    let goalName: String?
+    let remainingToday: Int
+
+    var headline: String {
+        if remainingToday == 0 { return "That's the day." }
+        return isCritical ? "Clean run." : "Done."
+    }
+
+    var note: String {
+        switch remainingToday {
+        case 0:  return "Nothing left today. Rest is part of it."
+        case 1:  return "One habit left."
+        default: return "\(remainingToday) habits left today."
+        }
+    }
+}
 
 struct QuestCompletionResult {
     let success: Bool

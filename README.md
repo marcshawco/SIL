@@ -20,7 +20,8 @@ of the previous game-styled interface.
 | Four-tab shell + Today screen | Done |
 | Goals / Focus / You screens rebuilt | Done |
 | Habits screen + Settings | Done |
-| Compose sheet, onboarding, overlays, widgets, watch | In progress |
+| Onboarding + completion / level-up / recalibration overlays | Done |
+| Compose sheet, widgets, watch app | In progress |
 | Icon + brand asset distribution | Done |
 
 ## Project layout
@@ -118,4 +119,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.4 (build 6.4)
+6.5 (build 6.5)

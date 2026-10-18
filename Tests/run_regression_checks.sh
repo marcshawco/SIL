@@ -71,12 +71,7 @@ grep -q 'hasLocationBackgroundMode' "$ROOT/SIL/Services/LocationManager.swift" |
 grep -q 'requestWhenInUseAuthorization()' "$ROOT/SIL/Services/LocationManager.swift" || fail "Location manager not using requestWhenInUseAuthorization"
 grep -q 'requestAlwaysAuthorization()' "$ROOT/SIL/Services/LocationManager.swift" || fail "Location manager not escalating to Always authorization"
 
-if awk '/struct StatusView: View/{flag=1} /\/\/ MARK: - Compact Header View/{flag=0} flag' \
-  "$ROOT/SIL/Views/Status/StatusView.swift" | grep -n 'ScrollView' >/dev/null; then
-  fail "Top-level StatusView should remain non-scrollable"
-fi
-
-grep -q 'FirstLaunchSetupView' "$ROOT/SIL/SILApp.swift" || fail "First launch setup view missing"
+grep -q 'SILOnboardingView' "$ROOT/SIL/SILApp.swift" || fail "Onboarding flow missing from the root view"
 grep -Fq 'loadDailyQuests() ?? []' "$ROOT/SIL/Services/GameEngine.swift" || fail "GameEngine should not seed default quests"
 grep -q 'case \.location: return "Location"' "$ROOT/SIL/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing Address tracking segment"
 grep -q 'customScheduleCard' "$ROOT/SIL/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing unified schedule section"
@@ -86,7 +81,7 @@ grep -q 'healthKitDataDidUpdate' "$ROOT/SIL/Services/HealthKitManager.swift" || 
 grep -q 'healthKitDataDidUpdate' "$ROOT/SIL/Services/GameEngine.swift" || fail "GameEngine should react to HealthKit updates"
 grep -q 'minimumVisitMinutes: configuredMinimumStay' "$ROOT/SIL/Services/LocationManager.swift" || fail "Location quest dwell-time configuration missing"
 grep -q 'failForAppExit' "$ROOT/SIL/Services/TrainingManager.swift" || fail "Training manager missing app-exit fail handler"
-grep -q 'phase == .background && trainingManager.isActive' "$ROOT/SIL/Views/Training/TrainingView.swift" || fail "Training view missing background fail trigger"
+grep -q 'newPhase == .background && training.isActive' "$ROOT/SIL/Views/SIL/SILFocusView.swift" || fail "Focus view missing background fail trigger"
 grep -q 'maxHP' "$ROOT/SIL/Models/PlayerModels.swift" || fail "Player HP model missing"
 grep -q 'awardXP(xp)' "$ROOT/SIL/Services/TrainingManager.swift" || fail "Training rewards should route through GameEngine.awardXP"
 

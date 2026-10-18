@@ -126,7 +126,7 @@ struct RootView: View {
                 SplashView()
                     .transition(.opacity)
             } else if !hasCompletedOnboarding {
-                FirstLaunchSetupView {
+                SILOnboardingView {
                     hasCompletedOnboarding = true
                 }
                     .transition(.opacity)

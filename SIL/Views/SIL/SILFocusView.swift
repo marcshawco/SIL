@@ -17,6 +17,7 @@ struct SILFocusView: View {
     @EnvironmentObject private var gameEngine: GameEngine
     @ObservedObject private var training = TrainingManager.shared
 
+    @Environment(\.scenePhase) private var phase
     @AppStorage("sil.focus.minutes") private var minutes: Int = 25
     @AppStorage("sil.focus.attribute") private var attributeRaw: String = SILAttribute.mind.rawValue
     @State private var label: String = ""
@@ -33,6 +34,13 @@ struct SILFocusView: View {
                 runningContent
             } else {
                 idleContent
+            }
+        }
+        .onChange(of: phase) { _, newPhase in
+            // Leaving the app mid-session abandons it. Pausing first is the
+            // way out that keeps what you earned.
+            if newPhase == .background && training.isActive && !training.isPaused {
+                training.failForAppExit()
             }
         }
     }

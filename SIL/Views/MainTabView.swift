@@ -47,6 +47,26 @@ struct MainTabView: View {
             }
             .padding(.bottom, 10)
 
+            if let completion = gameEngine.lastCompletion {
+                SILCompletionOverlay(
+                    title: completion.title,
+                    headline: completion.headline,
+                    progress: completion.progress,
+                    credits: completion.credits,
+                    attribute: completion.attribute,
+                    attributeGain: completion.attributeGain,
+                    goalNote: completion.goalName,
+                    note: completion.note,
+                    canUndo: gameEngine.canUndoLatestQuestCompletion,
+                    onUndo: {
+                        _ = gameEngine.undoLastQuestCompletion()
+                        gameEngine.lastCompletion = nil
+                    },
+                    onContinue: { gameEngine.lastCompletion = nil }
+                )
+                .zIndex(60)
+            }
+
             if let message = currentSystemMessage {
                 VStack {
                     SystemMessageBanner(message: message) {
@@ -84,15 +104,25 @@ struct MainTabView: View {
             guard let link else { return }
             apply(link.route)
         }
-        .sheet(item: $gameEngine.deathPenaltySummary) { summary in
-            DeathPenaltySummaryView(summary: summary)
+        .fullScreenCover(item: $gameEngine.deathPenaltySummary) { summary in
+            SILRecalibrationOverlay(
+                summary: summary,
+                momentum: gameEngine.player.momentum,
+                level: gameEngine.player.level,
+                credits: gameEngine.player.credits
+            ) {
+                gameEngine.deathPenaltySummary = nil
+            }
+            .presentationBackground(.clear)
         }
         .fullScreenCover(isPresented: $gameEngine.showLevelUpAlert) {
             if let data = gameEngine.lastLevelUpData {
-                GlassworkLevelUpView(data: data) {
+                SILLevelUpOverlay(
+                    data: data,
+                    totalHabits: gameEngine.player.completedQuestCount
+                ) {
                     gameEngine.showLevelUpAlert = false
                 }
-                .presentationBackground(.clear)
             }
         }
     }
