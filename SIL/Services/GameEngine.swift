@@ -445,7 +445,7 @@ class GameEngine: ObservableObject {
 
         save()
         HapticManager.shared.questUndoApplied()
-        SystemMessageHelper.showInfo("Undo Applied", "\"\(snapshot.questTitle)\" completion was reverted.")
+        SystemMessageHelper.showInfo("Undone", "\"\(snapshot.questTitle)\" is open again.")
         clearQuestCompletionUndoSnapshot()
         return true
     }
@@ -1253,7 +1253,7 @@ class GameEngine: ObservableObject {
         player.currentHP = max(0, player.currentHP - damage)
 
         if preserveStreak {
-            SystemMessageHelper.showInfo("Streak Shield Used", "Your streak was protected this cycle.")
+            SystemMessageHelper.showInfo("Streak held", "Your run carried over this cycle.")
             NotificationManager.shared.sendSystemAlert(
                 title: "Streak Shield Activated",
                 message: "A missed day was absorbed. Streak remains intact."
@@ -1265,11 +1265,11 @@ class GameEngine: ObservableObject {
             if isDeathMechanicEnabled {
                 deathPenaltySummary = applyDeathConsequences(missedQuestCount: missedQuestCount)
                 HapticManager.shared.deathPenaltyApplied()
-                SystemMessageHelper.showWarning("You were defeated. Death penalties applied.")
+                SystemMessageHelper.showWarning("Momentum ran out. SIL recalibrated.")
             } else {
                 player.currentHP = player.maxHP
                 HapticManager.shared.warning()
-                SystemMessageHelper.showWarning("HP depleted. Death penalties are disabled.")
+                SystemMessageHelper.showWarning("Momentum ran out. Recalibration is switched off, so nothing was taken.")
             }
         }
     }
@@ -1293,7 +1293,7 @@ class GameEngine: ObservableObject {
             title: "Rest Day Pass",
             detail: "Planned rest day. No HP lost, streak preserved. Remaining: \(player.restDayPassCharges)"
         )
-        SystemMessageHelper.showInfo("Rest Day Pass Used", "Missed quests were excused. No HP lost, streak intact.")
+        SystemMessageHelper.showInfo("Rest day", "Today is excused. No momentum lost, run intact.")
         NotificationManager.shared.sendSystemAlert(
             title: "Rest Day Pass Used",
             message: "Your rest day absorbed the missed quests. No HP lost, streak preserved."
@@ -1744,7 +1744,7 @@ class GameEngine: ObservableObject {
 
         save(syncToCloud: false)
         CloudKitSyncManager.shared.markLocalStateApplied(at: snapshot.updatedAt)
-        SystemMessageHelper.showInfo("Cloud Sync", "Pulled latest progress from iCloud.")
+        SystemMessageHelper.showInfo("Synced", "Pulled the latest from iCloud.")
     }
 
     private func dynamicGoalCurrentValue(
@@ -2075,7 +2075,7 @@ class GameEngine: ObservableObject {
             title: "[SYSTEM] Achievement Unlocked",
             message: "\(achievement.title) • \(rewardText)"
         )
-        SystemMessageHelper.showInfo("Achievement Unlocked", achievement.title)
+        SystemMessageHelper.showInfo("Milestone", achievement.title)
     }
 
     private func prepareUndoSnapshot(for questTitle: String) {

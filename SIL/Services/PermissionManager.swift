@@ -305,9 +305,9 @@ enum NeuralLinkType: String, CaseIterable, Identifiable {
 
     var color: Color {
         switch self {
-        case .vitalSigns: return SystemTheme.statVitality
-        case .worldPosition: return SystemTheme.statAgility
-        case .systemMessages: return SystemTheme.primaryBlue
+        case .vitalSigns: return S.ink
+        case .worldPosition: return S.ink
+        case .systemMessages: return S.accent
         }
     }
 }
@@ -322,10 +322,10 @@ enum PermissionStatus: String {
 
     var color: Color {
         switch self {
-        case .notDetermined: return SystemTheme.textTertiary
-        case .authorized: return SystemTheme.successGreen
-        case .denied: return SystemTheme.criticalRed
-        case .unavailable: return SystemTheme.textTertiary
+        case .notDetermined: return S.ink3
+        case .authorized: return S.ink
+        case .denied: return S.warn
+        case .unavailable: return S.ink3
         }
     }
 

@@ -215,6 +215,14 @@ enum S {
         static let frame: CGFloat  = 4
     }
 
+    /// Standard durations. SIL animates to show a value changed, never to
+    /// decorate.
+    enum Motion {
+        static let fast: Double = 0.2
+        static let normal: Double = 0.3
+        static let slow: Double = 0.5
+    }
+
     enum Space {
         static let screenH: CGFloat = 20
         static let screenTop: CGFloat = 62

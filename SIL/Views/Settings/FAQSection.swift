@@ -80,9 +80,9 @@ struct FAQSection: View {
             }
         } label: {
             Label("FAQ", systemImage: "questionmark.circle")
-                .foregroundStyle(SystemTheme.textPrimary)
+                .foregroundStyle(S.ink)
         }
-        .tint(SystemTheme.textSecondary)
+        .tint(S.ink2)
     }
 }
 
@@ -97,14 +97,14 @@ private struct FAQRow: View {
                 HStack(alignment: .top, spacing: 8) {
                     Text(item.question)
                         .font(SystemTypography.caption)
-                        .foregroundStyle(SystemTheme.textPrimary)
+                        .foregroundStyle(S.ink)
                         .multilineTextAlignment(.leading)
 
                     Spacer()
 
                     Image(systemName: "chevron.down")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(SystemTheme.textTertiary)
+                        .foregroundStyle(S.ink3)
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                 }
                 .contentShape(Rectangle())
@@ -114,7 +114,7 @@ private struct FAQRow: View {
             if isExpanded {
                 Text(item.answer)
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
                     .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity)
             }

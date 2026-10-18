@@ -497,11 +497,11 @@ enum RewardCategory: String, Codable, CaseIterable {
 
     var color: Color {
         switch self {
-        case .treat: return SystemTheme.warningOrange
-        case .entertainment: return SystemTheme.primaryPurple
-        case .time: return SystemTheme.primaryBlue
-        case .item: return SystemTheme.goldColor
-        case .experience: return SystemTheme.successGreen
+        case .treat: return S.ink2
+        case .entertainment: return S.accentInk
+        case .time: return S.accent
+        case .item: return S.ink
+        case .experience: return S.ink
         }
     }
 
@@ -561,7 +561,7 @@ struct MarketplaceView: View {
 
     var body: some View {
         ZStack {
-            SystemTheme.backgroundPrimary
+            S.bg
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -629,11 +629,11 @@ struct MarketplaceHeaderView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("[MARKETPLACE]")
                     .font(SystemTypography.systemTitle)
-                    .foregroundStyle(SystemTheme.goldColor)
+                    .foregroundStyle(S.ink)
 
                 Text("Exchange gold for real-world rewards")
                     .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.textTertiary)
+                    .foregroundStyle(S.ink3)
             }
 
             Spacer()
@@ -642,19 +642,19 @@ struct MarketplaceHeaderView: View {
             HStack(spacing: 8) {
                 Image(systemName: "dollarsign.circle.fill")
                     .font(.system(size: 24))
-                    .foregroundStyle(SystemTheme.goldColor)
+                    .foregroundStyle(S.ink)
 
                 Text("\(gold)")
                     .font(SystemTypography.statSmall)
-                    .foregroundStyle(SystemTheme.goldColor)
+                    .foregroundStyle(S.ink)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            .background(SystemTheme.goldColor.opacity(0.15))
+            .background(S.ink.opacity(0.15))
             .clipShape(Capsule())
         }
         .padding()
-        .background(SystemTheme.backgroundSecondary)
+        .background(S.card)
     }
 }
 
@@ -670,7 +670,7 @@ struct CategoryFilterView: View {
                 CategoryButton(
                     title: "All",
                     isSelected: selectedCategory == nil,
-                    color: SystemTheme.primaryBlue
+                    color: S.accent
                 ) {
                     selectedCategory = nil
                 }
@@ -689,7 +689,7 @@ struct CategoryFilterView: View {
             .padding(.horizontal)
             .padding(.vertical, 8)
         }
-        .background(SystemTheme.backgroundSecondary)
+        .background(S.card)
     }
 }
 
@@ -703,7 +703,7 @@ struct CategoryButton: View {
         Button(action: action) {
             Text(title)
                 .font(SystemTypography.caption)
-                .foregroundStyle(isSelected ? SystemTheme.backgroundPrimary : color)
+                .foregroundStyle(isSelected ? S.bg : color)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(isSelected ? color : color.opacity(0.15))
@@ -736,11 +736,11 @@ struct RewardCardView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(reward.name)
                     .font(SystemTypography.headline)
-                    .foregroundStyle(canAfford ? SystemTheme.textPrimary : SystemTheme.textTertiary)
+                    .foregroundStyle(canAfford ? S.ink : S.ink3)
 
                 Text(reward.description)
                     .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
                     .lineLimit(2)
             }
 
@@ -750,19 +750,19 @@ struct RewardCardView: View {
             VStack(spacing: 8) {
                 HStack(spacing: 4) {
                     Image(systemName: "dollarsign.circle.fill")
-                        .foregroundStyle(SystemTheme.goldColor)
+                        .foregroundStyle(S.ink)
                     Text("\(reward.cost)")
                         .font(SystemTypography.goldCounter)
-                        .foregroundStyle(SystemTheme.goldColor)
+                        .foregroundStyle(S.ink)
                 }
 
                 Button(action: onPurchase) {
                     Text("BUY")
                         .font(SystemTypography.mono(12, weight: .bold))
-                        .foregroundStyle(canAfford ? SystemTheme.backgroundPrimary : SystemTheme.textTertiary)
+                        .foregroundStyle(canAfford ? S.bg : S.ink3)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 8)
-                        .background(canAfford ? SystemTheme.goldColor : SystemTheme.backgroundTertiary)
+                        .background(canAfford ? S.ink : S.card2)
                         .clipShape(Capsule())
                 }
                 .disabled(!canAfford)
@@ -784,7 +784,7 @@ struct UnredeemedRewardsSection: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("UNREDEEMED REWARDS")
                 .font(SystemTypography.systemMessage)
-                .foregroundStyle(SystemTheme.successGreen)
+                .foregroundStyle(S.ink)
 
             ForEach(rewards) { purchase in
                 HStack {
@@ -793,7 +793,7 @@ struct UnredeemedRewardsSection: View {
 
                     Text(purchase.reward.name)
                         .font(SystemTypography.body)
-                        .foregroundStyle(SystemTheme.textPrimary)
+                        .foregroundStyle(S.ink)
 
                     Spacer()
 
@@ -801,14 +801,14 @@ struct UnredeemedRewardsSection: View {
                         onRedeem(purchase)
                     }
                     .font(SystemTypography.mono(12, weight: .bold))
-                    .foregroundStyle(SystemTheme.backgroundPrimary)
+                    .foregroundStyle(S.bg)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
-                    .background(SystemTheme.successGreen)
+                    .background(S.ink)
                     .clipShape(Capsule())
                 }
                 .padding()
-                .background(SystemTheme.successGreen.opacity(0.1))
+                .background(S.ink.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
             }
         }
@@ -834,7 +834,7 @@ struct PurchaseConfirmationOverlay: View {
             VStack(spacing: 24) {
                 Text("CONFIRM PURCHASE")
                     .font(SystemTypography.titleSmall)
-                    .foregroundStyle(SystemTheme.textPrimary)
+                    .foregroundStyle(S.ink)
 
                 // Reward info
                 VStack(spacing: 12) {
@@ -844,14 +844,14 @@ struct PurchaseConfirmationOverlay: View {
 
                     Text(reward.name)
                         .font(SystemTypography.headline)
-                        .foregroundStyle(SystemTheme.textPrimary)
+                        .foregroundStyle(S.ink)
 
                     HStack(spacing: 4) {
                         Image(systemName: "dollarsign.circle.fill")
-                            .foregroundStyle(SystemTheme.goldColor)
+                            .foregroundStyle(S.ink)
                         Text("\(reward.cost)")
                             .font(SystemTypography.statSmall)
-                            .foregroundStyle(SystemTheme.goldColor)
+                            .foregroundStyle(S.ink)
                     }
                 }
 
@@ -859,11 +859,11 @@ struct PurchaseConfirmationOverlay: View {
                 VStack(spacing: 4) {
                     Text("After purchase:")
                         .font(SystemTypography.caption)
-                        .foregroundStyle(SystemTheme.textTertiary)
+                        .foregroundStyle(S.ink3)
 
                     Text("\(currentGold) → \(currentGold - reward.cost) Gold")
                         .font(SystemTypography.mono(14, weight: .semibold))
-                        .foregroundStyle(SystemTheme.textSecondary)
+                        .foregroundStyle(S.ink2)
                 }
 
                 // Buttons
@@ -871,20 +871,20 @@ struct PurchaseConfirmationOverlay: View {
                     Button(action: onCancel) {
                         Text("CANCEL")
                             .font(SystemTypography.mono(14, weight: .bold))
-                            .foregroundStyle(SystemTheme.textSecondary)
+                            .foregroundStyle(S.ink2)
                             .padding(.horizontal, 32)
                             .padding(.vertical, 12)
-                            .background(SystemTheme.backgroundTertiary)
+                            .background(S.card2)
                             .clipShape(Capsule())
                     }
 
                     Button(action: onConfirm) {
                         Text("CONFIRM")
                             .font(SystemTypography.mono(14, weight: .bold))
-                            .foregroundStyle(SystemTheme.backgroundPrimary)
+                            .foregroundStyle(S.bg)
                             .padding(.horizontal, 32)
                             .padding(.vertical, 12)
-                            .background(SystemTheme.goldColor)
+                            .background(S.ink)
                             .clipShape(Capsule())
                     }
                 }

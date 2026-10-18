@@ -14,7 +14,7 @@ import Combine
 // MARK: - Penalty Manager
 
 /// Manages the penalty system - consequences for missed quests and failures
-/// Inspired by Solo Leveling's "Penalty Zone"
+/// Inspired by Solo Leveling's "Catch-up"
 @MainActor
 class PenaltyManager: ObservableObject {
 
@@ -68,8 +68,8 @@ class PenaltyManager: ObservableObject {
         let penalties = DefaultQuests.penaltyQuests
         guard !penalties.isEmpty else {
             return PenaltyQuest(
-                title: "Recovery Protocol",
-                description: "Complete a short recovery task to restore momentum.",
+                title: "Get back on",
+                description: "One short task puts momentum back.",
                 penaltyType: .physical
             )
         }
@@ -162,7 +162,7 @@ class PenaltyManager: ObservableObject {
 
         // Double the penalties for not completing them
         for _ in 0..<expiredCount {
-            applyPenalty(reason: .custom("Failed to complete penalty in time"), to: &player)
+            applyPenalty(reason: .custom("The catch-up task ran out of time"), to: &player)
         }
     }
 
@@ -171,8 +171,8 @@ class PenaltyManager: ObservableObject {
     /// Send a notification about a new penalty
     private func sendPenaltyNotification(penalty: PenaltyQuest, reason: PenaltyReason) {
         let content = UNMutableNotificationContent()
-        content.title = "[SYSTEM] PENALTY IMPOSED"
-        content.body = "\(reason.description). Complete: \(penalty.title)"
+        content.title = "Catch-up task"
+        content.body = "\(reason.description) Try: \(penalty.title)"
         content.sound = .default
         content.categoryIdentifier = "PENALTY"
 
@@ -191,8 +191,8 @@ class PenaltyManager: ObservableObject {
     /// Send penalty zone warning notification
     private func sendPenaltyZoneNotification() {
         let content = UNMutableNotificationContent()
-        content.title = "⚠️ PENALTY ZONE ACTIVATED ⚠️"
-        content.body = "You have entered the Penalty Zone. Complete all penalties within 24 hours or face severe consequences."
+        content.title = "Catch-up started"
+        content.body = "A few things slipped. Clear the catch-up tasks within 24 hours and nothing else changes."
         content.sound = UNNotificationSound.defaultCritical
         content.interruptionLevel = .critical
         content.categoryIdentifier = "PENALTY_ZONE"
@@ -212,10 +212,10 @@ class PenaltyManager: ObservableObject {
 
         for hours in reminderIntervals {
             let content = UNMutableNotificationContent()
-            content.title = "[SYSTEM] PENALTY ZONE WARNING"
+            content.title = "Catch-up ending soon"
 
             let remainingHours = penaltyZoneDurationHours - hours
-            content.body = "You have \(remainingHours) hours remaining to complete your penalties."
+            content.body = "\(remainingHours) hours left to clear your catch-up tasks."
             content.sound = .default
             content.categoryIdentifier = "PENALTY_REMINDER"
 
@@ -255,7 +255,7 @@ class PenaltyManager: ObservableObject {
     private func handlePenaltyZoneFailure() {
         // This is the ultimate failure state
         // Reset streak, deduct XP/gold, etc.
-        currentPenaltyMessage = "PENALTY ZONE FAILED. Severe consequences applied."
+        currentPenaltyMessage = "Catch-up window closed. Momentum took the hit."
         showPenaltyWarning = true
 
         // The actual stat modifications would happen in GameEngine
@@ -300,16 +300,16 @@ struct PenaltyZoneView: View {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(SystemTheme.criticalRed)
+                        .foregroundStyle(S.warn)
                         .opacity(pulseAnimation ? 1.0 : 0.5)
 
-                    Text("PENALTY ZONE")
+                    Text("CATCH-UP")
                         .font(SystemTypography.titleMedium)
-                        .foregroundStyle(SystemTheme.criticalRed)
+                        .foregroundStyle(S.warn)
 
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(SystemTheme.criticalRed)
+                        .foregroundStyle(S.warn)
                         .opacity(pulseAnimation ? 1.0 : 0.5)
                 }
 
@@ -322,7 +322,7 @@ struct PenaltyZoneView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("COMPLETE THESE PENALTIES:")
                         .font(SystemTypography.systemMessage)
-                        .foregroundStyle(SystemTheme.textSecondary)
+                        .foregroundStyle(S.ink2)
 
                     ForEach(penaltyManager.activePenalties) { penalty in
                         PenaltyRowView(penalty: penalty)
@@ -332,17 +332,17 @@ struct PenaltyZoneView: View {
                 // Warning text
                 Text("Failure to complete penalties will result in severe stat reductions.")
                     .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.criticalRed.opacity(0.8))
+                    .foregroundStyle(S.warn.opacity(0.8))
                     .multilineTextAlignment(.center)
             }
             .padding(24)
-            .background(SystemTheme.criticalRed.opacity(0.1))
+            .background(S.warn.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: SystemRadius.large))
             .overlay(
                 RoundedRectangle(cornerRadius: SystemRadius.large)
-                    .stroke(SystemTheme.criticalRed, lineWidth: 2)
+                    .stroke(S.warn, lineWidth: 2)
             )
-            .glow(color: SystemTheme.criticalRed.opacity(pulseAnimation ? 0.5 : 0.2), radius: 15)
+            .glow(color: S.warn.opacity(pulseAnimation ? 0.5 : 0.2), radius: 15)
             .onAppear {
                 withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
                     pulseAnimation = true
@@ -363,11 +363,11 @@ struct TimeRemainingView: View {
         VStack(spacing: 4) {
             Text("TIME REMAINING")
                 .font(SystemTypography.captionSmall)
-                .foregroundStyle(SystemTheme.textTertiary)
+                .foregroundStyle(S.ink3)
 
             Text(timeRemaining)
                 .font(SystemTypography.timerSmall)
-                .foregroundStyle(SystemTheme.criticalRed)
+                .foregroundStyle(S.warn)
         }
         .onAppear {
             updateTimeRemaining()
@@ -405,18 +405,18 @@ struct PenaltyRowView: View {
         HStack(spacing: 12) {
             Image(systemName: penalty.penaltyType.icon)
                 .font(.system(size: 20))
-                .foregroundStyle(SystemTheme.criticalRed)
+                .foregroundStyle(S.warn)
                 .frame(width: 32)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(penalty.title)
                     .font(SystemTypography.headline)
-                    .foregroundStyle(penalty.isCompleted ? SystemTheme.textTertiary : SystemTheme.textPrimary)
+                    .foregroundStyle(penalty.isCompleted ? S.ink3 : S.ink)
                     .strikethrough(penalty.isCompleted)
 
                 Text(penalty.description)
                     .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
                     .lineLimit(2)
             }
 
@@ -424,21 +424,21 @@ struct PenaltyRowView: View {
 
             if penalty.isCompleted {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(SystemTheme.successGreen)
+                    .foregroundStyle(S.ink)
             } else {
                 Button("COMPLETE") {
                     // Handle completion
                 }
                 .font(SystemTypography.captionSmall)
-                .foregroundStyle(SystemTheme.backgroundPrimary)
+                .foregroundStyle(S.bg)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(SystemTheme.criticalRed)
+                .background(S.warn)
                 .clipShape(Capsule())
             }
         }
         .padding(12)
-        .background(SystemTheme.backgroundSecondary)
+        .background(S.card)
         .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
     }
 }

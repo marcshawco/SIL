@@ -66,8 +66,10 @@ class NotificationManager: NSObject, ObservableObject {
         return String(format: localized(key), locale: locale, arguments: arguments)
     }
 
+    /// Notification titles used to be wrapped as "[SYSTEM] …". SIL does not
+    /// speak as a system, so the title is just the title.
     private func systemTitle(_ value: String) -> String {
-        localizedFormat("[SYSTEM] %@", value)
+        value
     }
 
     enum QuestCompletionNotificationMode: String, CaseIterable, Identifiable {
@@ -157,7 +159,7 @@ class NotificationManager: NSObject, ObservableObject {
         // Quest complete actions
         let completeQuestAction = UNNotificationAction(
             identifier: completeQuestActionIdentifier,
-            title: localized("Complete Quest"),
+            title: localized("Mark done"),
             options: []
         )
 
@@ -189,7 +191,7 @@ class NotificationManager: NSObject, ObservableObject {
         // Dungeon actions
         let startDungeonAction = UNNotificationAction(
             identifier: "START_DUNGEON",
-            title: localized("Enter Dungeon"),
+            title: localized("Start focus"),
             options: .foreground
         )
 
@@ -221,7 +223,7 @@ class NotificationManager: NSObject, ObservableObject {
 
         switch questCompletionNotificationMode {
         case .immediate:
-            sendImmediateQuestCompleteNotification(title: localized("Quest Complete"), body: messageBody)
+            sendImmediateQuestCompleteNotification(title: localized("Habit done"), body: messageBody)
         case .digest:
             enqueueQuestCompletionDigest(questTitle: questTitle, xp: xp, gold: gold)
         }
@@ -273,13 +275,13 @@ class NotificationManager: NSObject, ObservableObject {
         let totalGold = queue.reduce(0) { $0 + $1.gold }
 
         let content = UNMutableNotificationContent()
-        content.title = systemTitle(localized("Quest Digest"))
+        content.title = systemTitle(localized("Today's habits"))
         if queue.count == 1, let only = queue.first {
             content.body = questCompletionBody(title: only.title, xp: only.xp, gold: only.gold)
         } else {
             content.body = totalGold > 0
-                ? localizedFormat("%d quests completed • +%d XP • +%d Gold.", queue.count, totalXP, totalGold)
-                : localizedFormat("%d quests completed • +%d XP (optional quests grant XP only).", queue.count, totalXP)
+                ? localizedFormat("%d habits done · +%d progress · +%d CR.", queue.count, totalXP, totalGold)
+                : localizedFormat("%d habits done · +%d progress (optional habits earn no credits).", queue.count, totalXP)
         }
         content.sound = .default
         content.categoryIdentifier = "QUEST_COMPLETE"
@@ -323,7 +325,7 @@ class NotificationManager: NSObject, ObservableObject {
         if gold > 0 {
             return localizedFormat("%@ finished. +%d XP, +%d Gold.", title, xp, gold)
         }
-        return localizedFormat("%@ finished. +%d XP (optional quest: no gold).", title, xp)
+        return localizedFormat("%@ done. +%d progress (optional, so no credits).", title, xp)
     }
 
     private func updateQueuedDigestCount() {
@@ -340,8 +342,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send evening reminder for incomplete quests
     func scheduleEveningReminder(incompleteCount: Int) {
         let content = UNMutableNotificationContent()
-        content.title = systemTitle(localized("Quests Incomplete"))
-        content.body = localizedFormat("You have %d quest(s) remaining. Complete them to avoid penalties.", incompleteCount)
+        content.title = systemTitle(localized("Still open"))
+        content.body = localizedFormat("%d habit(s) still open today.", incompleteCount)
         content.sound = .default
         content.categoryIdentifier = "DAILY_REMINDER"
 
@@ -1011,7 +1013,7 @@ struct NotificationSettingsView: View {
 
     var body: some View {
         ZStack {
-            SystemTheme.backgroundPrimary
+            S.bg
                 .ignoresSafeArea()
 
             ScrollView {
@@ -1020,7 +1022,7 @@ struct NotificationSettingsView: View {
                     HStack {
                         Text("[NOTIFICATIONS]")
                             .font(SystemTypography.systemTitle)
-                            .foregroundStyle(SystemTheme.primaryBlue)
+                            .foregroundStyle(S.accent)
                         Spacer()
                     }
 
@@ -1029,7 +1031,7 @@ struct NotificationSettingsView: View {
                         VStack(spacing: 12) {
                             Text("Notifications are disabled")
                                 .font(SystemTypography.headline)
-                                .foregroundStyle(SystemTheme.warningOrange)
+                                .foregroundStyle(S.ink2)
 
                             Button("Enable Notifications") {
                                 Task {
@@ -1037,9 +1039,9 @@ struct NotificationSettingsView: View {
                                 }
                             }
                             .font(SystemTypography.mono(14, weight: .bold))
-                            .foregroundStyle(SystemTheme.backgroundPrimary)
+                            .foregroundStyle(S.bg)
                             .padding()
-                            .background(SystemTheme.primaryBlue)
+                            .background(S.accent)
                             .clipShape(Capsule())
                         }
                         .padding()
@@ -1052,7 +1054,7 @@ struct NotificationSettingsView: View {
                         subtitle: "Remind me to complete daily quests",
                         isOn: $dailyReminderEnabled,
                         icon: "bell.fill",
-                        color: SystemTheme.primaryBlue
+                        color: S.accent
                     )
                     .onChange(of: dailyReminderEnabled) { _, enabled in
                         UserDefaults.standard.set(enabled, forKey: "dailyReminderEnabled")
@@ -1070,7 +1072,7 @@ struct NotificationSettingsView: View {
                         subtitle: "Warn me if quests are incomplete",
                         isOn: $eveningReminderEnabled,
                         icon: "moon.fill",
-                        color: SystemTheme.primaryPurple
+                        color: S.accentInk
                     )
 
                     // Streak Alerts
@@ -1079,7 +1081,7 @@ struct NotificationSettingsView: View {
                         subtitle: "Alert me when my streak is at risk",
                         isOn: $streakAlertsEnabled,
                         icon: "flame.fill",
-                        color: SystemTheme.warningOrange
+                        color: S.ink2
                     )
                 }
                 .padding()
@@ -1107,11 +1109,11 @@ struct SettingsToggleRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(SystemTypography.headline)
-                    .foregroundStyle(SystemTheme.textPrimary)
+                    .foregroundStyle(S.ink)
 
                 Text(subtitle)
                     .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
             }
 
             Spacer()

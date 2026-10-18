@@ -31,21 +31,21 @@ struct PermissionManagerView: View {
                     // Brain icon with glow
                     ZStack {
                         Circle()
-                            .fill(SystemTheme.primaryBlue.opacity(0.1))
+                            .fill(S.accent.opacity(0.1))
                             .frame(width: 80, height: 80)
 
                         Image(systemName: "brain.head.profile")
                             .font(.system(size: 40))
-                            .foregroundStyle(SystemTheme.primaryBlue)
+                            .foregroundStyle(S.accent)
                     }
 
                     Text("[SYSTEM]: Neural Link Status")
                         .font(SystemTypography.systemMessage)
-                        .foregroundStyle(SystemTheme.primaryBlue)
+                        .foregroundStyle(S.accent)
 
                     Text("Connect data sources to enable automatic quest tracking and enhanced features")
                         .font(SystemTypography.caption)
-                        .foregroundStyle(SystemTheme.textSecondary)
+                        .foregroundStyle(S.ink2)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
@@ -110,16 +110,16 @@ struct PermissionManagerView: View {
                 } label: {
                     HStack {
                         Image(systemName: "gear")
-                            .foregroundStyle(SystemTheme.primaryBlue)
+                            .foregroundStyle(S.accent)
 
                         Text("Open System Settings")
-                            .foregroundStyle(SystemTheme.textPrimary)
+                            .foregroundStyle(S.ink)
 
                         Spacer()
 
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 12))
-                            .foregroundStyle(SystemTheme.textTertiary)
+                            .foregroundStyle(S.ink3)
                     }
                 }
             } footer: {
@@ -236,11 +236,11 @@ struct NeuralLinkRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(type.rawValue)
                         .font(SystemTypography.headline)
-                        .foregroundStyle(SystemTheme.textPrimary)
+                        .foregroundStyle(S.ink)
 
                     Text(description(for: type))
                         .font(SystemTypography.captionSmall)
-                        .foregroundStyle(SystemTheme.textSecondary)
+                        .foregroundStyle(S.ink2)
                 }
 
                 Spacer()
@@ -312,12 +312,12 @@ struct NeuralLinkExplanation: View {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "checkmark")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(SystemTheme.successGreen)
+                        .foregroundStyle(S.ink)
                         .frame(width: 16)
 
                     Text(benefit)
                         .font(SystemTypography.captionSmall)
-                        .foregroundStyle(SystemTheme.textSecondary)
+                        .foregroundStyle(S.ink2)
                 }
             }
         }
@@ -366,31 +366,31 @@ private struct NeuralLinkSignalRow: View {
             HStack {
                 Text(title)
                     .font(SystemTypography.bodySmall)
-                    .foregroundStyle(SystemTheme.textPrimary)
+                    .foregroundStyle(S.ink)
                 Spacer()
                 Text(connected ? "Connected" : "Not Connected")
                     .font(SystemTypography.mono(11, weight: .semibold))
-                    .foregroundStyle(connected ? SystemTheme.successGreen : SystemTheme.warningOrange)
+                    .foregroundStyle(connected ? S.ink : S.ink2)
             }
 
             HStack {
                 Text("Last Update")
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.textTertiary)
+                    .foregroundStyle(S.ink3)
                 Spacer()
                 Text(lastUpdateText)
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
             }
 
             HStack {
                 Text("Background Active")
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.textTertiary)
+                    .foregroundStyle(S.ink3)
                 Spacer()
                 Text(backgroundActive ? "Yes" : "No")
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(backgroundActive ? SystemTheme.successGreen : SystemTheme.textSecondary)
+                    .foregroundStyle(backgroundActive ? S.ink : S.ink2)
             }
         }
         .padding(.vertical, 4)

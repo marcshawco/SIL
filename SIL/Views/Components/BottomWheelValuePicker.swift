@@ -33,7 +33,7 @@ struct BottomWheelValuePickerSheet: View {
 
     var body: some View {
         ZStack {
-            SystemTheme.backgroundPrimary
+            S.bg
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -60,7 +60,7 @@ struct BottomWheelValuePickerSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(SystemTypography.titleSmall)
-                .foregroundStyle(SystemTheme.textPrimary)
+                .foregroundStyle(S.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
                 .allowsTightening(true)
@@ -73,7 +73,7 @@ struct BottomWheelValuePickerSheet: View {
             if let subtitle, !subtitle.isEmpty {
                 Text(subtitle)
                     .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
                     .lineLimit(1)
                     .minimumScaleFactor(0.62)
                     .allowsTightening(true)
@@ -85,7 +85,7 @@ struct BottomWheelValuePickerSheet: View {
     private var pickerBar: some View {
         VStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 3)
-                .fill(SystemTheme.textTertiary.opacity(0.45))
+                .fill(S.ink3.opacity(0.45))
                 .frame(width: 54, height: 5)
                 .padding(.top, 2)
                 .padding(.bottom, 12)
@@ -105,7 +105,7 @@ struct BottomWheelValuePickerSheet: View {
 
                 Text(confirmTitle)
                     .font(SystemTypography.body)
-                    .foregroundStyle(SystemTheme.textPrimary)
+                    .foregroundStyle(S.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .allowsTightening(true)
@@ -139,7 +139,7 @@ struct BottomWheelValuePickerSheet: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(SystemTheme.backgroundElevated)
+                .fill(S.bg2)
                 .ignoresSafeArea(edges: .bottom)
         )
     }

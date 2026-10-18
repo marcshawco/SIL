@@ -55,16 +55,10 @@ enum StatType: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    var color: Color {
-        switch self {
-        case .strength: return SystemTheme.statStrength
-        case .intelligence: return SystemTheme.statIntelligence
-        case .agility: return SystemTheme.statAgility
-        case .vitality: return SystemTheme.statVitality
-        case .willpower: return SystemTheme.statWillpower
-        case .spirit: return SystemTheme.statSpirit
-        }
-    }
+    /// SIL tells attributes apart by glyph, not hue. These model types are
+    /// shared with the widget target, which cannot see `S`, so they use the
+    /// semantic colours instead.
+    var color: Color { .primary }
 }
 
 // MARK: - Stat Value
@@ -127,31 +121,27 @@ enum PlayerRank: String, Codable, CaseIterable {
         }
     }
 
+    /// How long you've been at it, said plainly. SIL does not award fantasy
+    /// ranks; this describes the distance travelled, nothing more.
     var title: String {
         switch self {
-        case .e: return "Awakened"
-        case .d: return "Novice Hunter"
-        case .c: return "Hunter"
-        case .b: return "Elite Hunter"
-        case .a: return "Veteran Hunter"
-        case .s: return "National Level Hunter"
-        case .ss: return "Transcendent"
-        case .sss: return "Apex Predator"
-        case .monarch: return "Shadow Monarch"
+        case .e:       return "Starting out"
+        case .d:       return "Finding a rhythm"
+        case .c:       return "Consistent"
+        case .b:       return "Established"
+        case .a:       return "Steady hand"
+        case .s:       return "In for the long game"
+        case .ss:      return "Years in"
+        case .sss:     return "Quietly relentless"
+        case .monarch: return "Nothing left to prove"
         }
     }
 
     var glowColor: Color {
         switch self {
-        case .e: return .gray
-        case .d: return .green
-        case .c: return .blue
-        case .b: return .purple
-        case .a: return .orange
-        case .s: return .red
-        case .ss: return SystemTheme.primaryBlue
-        case .sss: return SystemTheme.primaryPurple
-        case .monarch: return .yellow
+        case .e, .d, .c:        return .secondary
+        case .b, .a, .s:        return .primary
+        case .ss, .sss, .monarch: return .primary
         }
     }
 
@@ -249,7 +239,7 @@ class Player: Codable {
     init(name: String = "Hunter", originStory: String = "") {
         self.id = UUID()
         self.name = name
-        self.title = "Awakened"
+        self.title = "Starting out"
         self.preferredTitle = nil
         self.originStory = originStory
         self.createdAt = Date()
@@ -385,7 +375,7 @@ enum AchievementRarity: String, Codable, CaseIterable {
         switch self {
         case .common: return Self.color(red: 176, green: 141, blue: 87)
         case .rare: return Self.color(red: 192, green: 192, blue: 192)
-        case .epic: return SystemTheme.goldColor
+        case .epic: return .primary
         case .legendary: return Self.color(red: 229, green: 228, blue: 226)
         }
     }

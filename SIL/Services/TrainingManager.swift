@@ -26,7 +26,7 @@ class TrainingManager: ObservableObject {
     @Published var focusModeEnabled: Bool = false
     @Published var elapsedSeconds: Int = 0
     @Published var totalSeconds: Int = 0
-    @Published var sessionTitle: String = "Training Session"
+    @Published var sessionTitle: String = "Focus"
     /// Whether a running session is currently held. The Focus screen reads
     /// this to label its pause control and dim the dial.
     @Published private(set) var isPaused: Bool = false
@@ -93,7 +93,7 @@ class TrainingManager: ObservableObject {
     /// - Parameters:
     ///   - minutes: Duration in minutes
     ///   - title: Optional custom session title
-    func startSession(minutes: Int, title: String = "Training Session") {
+    func startSession(minutes: Int, title: String = "Focus") {
         guard !isActive else { return }
 
         // [SYSTEM]: Training session initiated
@@ -118,8 +118,8 @@ class TrainingManager: ObservableObject {
         // [SYSTEM]: Suggest enabling Do Not Disturb
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             SystemMessageHelper.showInfo(
-                "Focus Mode Active",
-                "Activate Do Not Disturb for maximum XP gain."
+                "Focus running",
+                "Turn on Do Not Disturb and put the phone face down."
             )
         }
     }
@@ -156,13 +156,13 @@ class TrainingManager: ObservableObject {
         engine.recordExternalActivity(
             type: .questCompleted,
             title: sessionTitle,
-            detail: "+\(xp) XP • +\(gold) Gold"
+            detail: "+\(xp) progress · +\(gold) CR"
         )
 
         // Show completion message
         SystemMessageHelper.showInfo(
-            "Training Complete",
-            "+\(xp) XP, +\(gold) Gold earned."
+            "Focus done",
+            "+\(xp) progress, +\(gold) CR."
         )
         AnalyticsManager.shared.trackFeature("training_session_completed")
         HapticManager.shared.trainingCompleted()
@@ -176,7 +176,7 @@ class TrainingManager: ObservableObject {
     /// Abandon the session early (applies penalty)
     func abandon(
         reason: PenaltyReason = .dungeonFailed,
-        warningMessage: String = "Training session abandoned. A penalty has been applied."
+        warningMessage: String = "Focus session left early. Momentum took the hit."
     ) {
         guard isActive else { return }
 
@@ -206,7 +206,7 @@ class TrainingManager: ObservableObject {
     func failForAppExit() {
         abandon(
             reason: .dungeonFailed,
-            warningMessage: "Training failed because you left the app before the timer ended."
+            warningMessage: "You left the app before the timer ended, so the session ended early."
         )
     }
 
@@ -278,10 +278,10 @@ enum TrainingDifficulty: String, CaseIterable {
 
     var color: Color {
         switch self {
-        case .quick: return SystemTheme.successGreen
-        case .standard: return SystemTheme.primaryBlue
-        case .intense: return SystemTheme.primaryPurple
-        case .marathon: return SystemTheme.goldColor
+        case .quick: return S.ink
+        case .standard: return S.accent
+        case .intense: return S.accentInk
+        case .marathon: return S.ink
         }
     }
 }

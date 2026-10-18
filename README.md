@@ -23,7 +23,9 @@ of the previous game-styled interface.
 | Onboarding + completion / level-up / recalibration overlays | Done |
 | Compose sheet | Done |
 | Widgets + watch app restyled | Done |
-| Last Glasswork shims retired | In progress |
+| Glasswork + SystemTheme shims retired | Done |
+| Copy sweep: notifications, titles, system messages | Done |
+| Localisation pass for the five translations | Outstanding |
 | Icon + brand asset distribution | Done |
 
 ## Project layout
@@ -102,8 +104,18 @@ engine honours all three.
 - App icons: Ink (primary), Paper, Violet, Ember — same mark, different ground
 
 Tokens live in [`SIL/Design/SILTheme.swift`](SIL/Design/SILTheme.swift) under the
-`S` namespace. `GW` and `SystemTheme` are compatibility shims that forward their
-old names to `S`; they shrink as screens are rebuilt.
+`S` namespace. Every screen reads `S` directly — the `GW` and `SystemTheme`
+shims are gone. Three Glasswork primitives survive in `GlassworkComponents`,
+redrawn on SIL surfaces, until the habit editor is rebuilt.
+
+## Known gaps
+
+- The five translations (de, es, fr, it, ru) still carry game-era wording.
+  The string keys were renamed to SIL's vocabulary and the existing
+  translations carried across, so nothing is missing at runtime, but the
+  non-English copy says "Quest" and "Dungeon" and needs a human pass.
+- Schibsted Grotesk and Martian Mono are not bundled; type falls back to
+  SF Pro and SF Mono.
 
 Full asset inventory and usage rules: [`sil-logo-pack/README.md`](sil-logo-pack/README.md)
 
@@ -122,4 +134,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.6 (build 6.6)
+6.7 (build 6.7)

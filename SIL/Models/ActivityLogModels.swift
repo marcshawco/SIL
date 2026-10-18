@@ -23,14 +23,9 @@ enum ActivityLogType: String, Codable {
         }
     }
 
-    var color: Color {
-        switch self {
-        case .questCompleted: return SystemTheme.successGreen
-        case .bossDefeated: return SystemTheme.criticalRed
-        case .rewardConsumed: return SystemTheme.goldColor
-        case .achievementUnlocked: return SystemTheme.primaryBlue
-        }
-    }
+    /// Shared with the widget target, which cannot see `S`. The log reads in
+    /// ink either way.
+    var color: Color { .primary }
 }
 
 struct ActivityLogEntry: Codable, Identifiable {

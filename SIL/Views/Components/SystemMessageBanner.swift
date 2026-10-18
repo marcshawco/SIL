@@ -33,27 +33,24 @@ struct SystemMessage: Identifiable, Equatable {
         case warning = "Warning"
         case critical = "Critical"
         case levelUp = "Level Up"
-        case questComplete = "Quest Complete"
+        case questComplete = "Habit Done"
 
+        /// Only a genuine problem gets a colour. Everything else is ink.
         var color: Color {
             switch self {
-            case .info: return GW.cyan
-            case .success: return GW.good
-            case .warning: return GW.amber
-            case .critical: return GW.danger
-            case .levelUp: return GW.gold
-            case .questComplete: return GW.cyan
+            case .warning, .critical: return S.warn
+            default:                  return S.ink
             }
         }
 
         var icon: String {
             switch self {
-            case .info: return "diamond.fill"
-            case .success: return "checkmark.diamond.fill"
-            case .warning: return "exclamationmark.triangle.fill"
-            case .critical: return "xmark.diamond.fill"
-            case .levelUp: return "arrow.up.circle.fill"
-            case .questComplete: return "star.fill"
+            case .info:          return "info.circle"
+            case .success:       return "checkmark.circle"
+            case .warning:       return "exclamationmark.circle"
+            case .critical:      return "exclamationmark.triangle"
+            case .levelUp:       return "arrow.up.circle"
+            case .questComplete: return "checkmark.circle"
             }
         }
     }
@@ -61,15 +58,12 @@ struct SystemMessage: Identifiable, Equatable {
     // MARK: - Static Helpers
 
     static func questCompleted(title: String, xp: Int, gold: Int) -> SystemMessage {
-        let detail: String
-        if gold > 0 {
-            detail = "\(title) - +\(xp) XP, +\(gold) Gold"
-        } else {
-            detail = "\(title) - +\(xp) XP (optional quest)"
-        }
+        let detail = gold > 0
+            ? "\(title) · +\(xp) progress, +\(gold) CR"
+            : "\(title) · +\(xp) progress"
         return SystemMessage(
             type: .questComplete,
-            title: "Quest Complete",
+            title: "Done",
             message: detail
         )
     }
@@ -77,8 +71,8 @@ struct SystemMessage: Identifiable, Equatable {
     static func levelUp(level: Int, rank: String) -> SystemMessage {
         SystemMessage(
             type: .levelUp,
-            title: "LEVEL UP!",
-            message: "You have reached Level \(level). Rank: \(rank)",
+            title: "Level \(level)",
+            message: "You've moved up. Same rhythm from here.",
             duration: 6.0
         )
     }
@@ -94,7 +88,8 @@ struct SystemMessage: Identifiable, Equatable {
 
 // MARK: - System Message Banner View
 
-/// Holographic banner for in-app notifications
+/// A quiet banner for in-app notices. Drops in under the status bar, states
+/// one thing, and leaves.
 struct SystemMessageBanner: View {
 
     let message: SystemMessage
@@ -106,63 +101,42 @@ struct SystemMessageBanner: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Icon
             Image(systemName: message.type.icon)
-                .font(.system(size: 22))
+                .font(.system(size: 20, weight: .regular))
                 .foregroundStyle(message.type.color)
-                .shadow(color: message.type.color.opacity(0.6), radius: 6)
 
-            // Content
             VStack(alignment: .leading, spacing: 2) {
-                Text("[ SYSTEM · \(message.title.uppercased()) ]")
-                    .font(GW.mono(11, weight: .medium))
-                    .tracking(1.6)
-                    .foregroundStyle(message.type.color)
+                Text(message.title)
+                    .font(S.text(15, .semibold))
+                    .foregroundStyle(S.ink)
 
                 Text(message.message)
-                    .font(GW.sans(12))
-                    .foregroundStyle(GW.inkSoft)
+                    .font(S.text(13))
+                    .foregroundStyle(S.ink2)
                     .lineLimit(2)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
 
-            // Dismiss button
             Button {
                 dismissBanner()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(GW.mute)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(S.ink3)
                     .padding(8)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    LinearGradient(colors: [Color.white.opacity(0.07), Color.white.opacity(0.02)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(message.type.color.opacity(0.4), lineWidth: 1)
-        )
-        .overlay(alignment: .top) {
-            // Accent hairline along the top edge in the message color
-            Rectangle()
-                .fill(LinearGradient(colors: [.clear, message.type.color, .clear],
-                                     startPoint: .leading, endPoint: .trailing))
-                .frame(height: 1)
-                .padding(.horizontal, 14)
-                .offset(y: -0.5)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background {
+            let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+            shape
+                .fill(S.bg2)
+                .overlay(shape.strokeBorder(S.line, lineWidth: 1))
+                .shadow(color: S.shadowColor.opacity(0.5), radius: 20, y: 8)
         }
-        .shadow(color: message.type.color.opacity(0.25), radius: 12, y: 6)
-        .shadow(color: .black.opacity(0.4), radius: 18, y: 12)
         .padding(.horizontal, 14)
         .padding(.top, 8)
         .offset(y: offsetY)
@@ -259,7 +233,7 @@ class SystemMessageHelper {
 
 #Preview("Info Banner") {
     ZStack {
-        SystemTheme.backgroundPrimary.ignoresSafeArea()
+        S.bg.ignoresSafeArea()
 
         VStack {
             SystemMessageBanner(
@@ -273,7 +247,7 @@ class SystemMessageHelper {
 
 #Preview("Level Up Banner") {
     ZStack {
-        SystemTheme.backgroundPrimary.ignoresSafeArea()
+        S.bg.ignoresSafeArea()
 
         VStack {
             SystemMessageBanner(

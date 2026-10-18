@@ -262,7 +262,7 @@ struct QuestFormSheet: View {
                 .sheet(isPresented: $showCreateBossSheet) {
                     SILComposeSheet(initialKind: .goal)
                 }
-                .alert(mode.isEditing ? "Unable to Save Quest" : "Unable to Create Quest", isPresented: Binding(
+                .alert(mode.isEditing ? "Could not save the habit" : "Could not create the habit", isPresented: Binding(
                     get: { errorMessage != nil },
                     set: { if !$0 { errorMessage = nil } }
                 )) {
@@ -274,7 +274,7 @@ struct QuestFormSheet: View {
                     BottomWheelValuePickerSheet(
                         title: input.title,
                         subtitle: input.subtitle,
-                        accentColor: SystemTheme.primaryBlue,
+                        accentColor: S.accent,
                         options: wheelOptions(for: input),
                         selection: wheelBinding(for: input),
                         confirmTitle: "Apply"
@@ -283,7 +283,7 @@ struct QuestFormSheet: View {
                 .sheet(isPresented: $showHealthTypePicker) {
                     BottomHealthTypePickerSheet(
                         selection: $healthKitType,
-                        accentColor: SystemTheme.primaryBlue
+                        accentColor: S.accent
                     )
                 }
                 .keyboardDismissToolbar()
@@ -411,7 +411,7 @@ struct QuestFormSheet: View {
     private var customDetailsCard: some View {
         GWCard(paddingX: 14, paddingY: 12) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("QUEST DETAILS")
+                Text("HABIT")
                     .font(GW.mono(9, weight: .medium))
                     .tracking(2)
                     .foregroundStyle(GW.mute)
@@ -441,12 +441,12 @@ struct QuestFormSheet: View {
                         .tracking(2)
                         .foregroundStyle(GW.mute)
                     Spacer()
-                    Text("+\(GameFormulas.questXP(difficulty: difficulty)) XP")
+                    Text("+\(GameFormulas.questXP(difficulty: difficulty)) progress")
                         .font(GW.display(18, weight: .bold))
                         .foregroundStyle(GW.cyan)
                     let previewGold = isOptionalQuest ? 0 : GameFormulas.questGold(difficulty: difficulty)
                     if previewGold > 0 {
-                        Text("+\(previewGold)g")
+                        Text("+\(previewGold) CR")
                             .font(GW.mono(11, weight: .semibold))
                             .foregroundStyle(GW.amber)
                     }
@@ -464,10 +464,10 @@ struct QuestFormSheet: View {
 
                 Toggle(isOn: $isOptionalQuest) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Optional Quest")
+                        Text("Optional")
                             .font(GW.sans(13, weight: .semibold))
                             .foregroundStyle(GW.ink)
-                        Text("XP & stats only — no Gold, and no missed-quest HP damage.")
+                        Text("Counts toward your level. No credits, and missing it never costs momentum.")
                             .font(GW.sans(11))
                             .foregroundStyle(GW.mute)
                     }
@@ -582,19 +582,19 @@ struct QuestFormSheet: View {
     private var customBossCard: some View {
         GWCard(paddingX: 14, paddingY: 12) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("LINK A BOSS")
+                Text("MOVES A GOAL")
                     .font(GW.mono(9, weight: .medium))
                     .tracking(2)
                     .foregroundStyle(GW.mute)
 
                 if linkableBosses.isEmpty {
-                    Text("No active bosses yet.")
+                    Text("No goals yet.")
                         .font(GW.sans(12))
                         .foregroundStyle(GW.mute)
                     Button { showCreateBossSheet = true } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "plus.circle.fill")
-                            Text("Create a boss")
+                            Text("New goal")
                         }
                         .font(GW.sans(12, weight: .semibold))
                         .foregroundStyle(GW.cyan)
@@ -613,11 +613,11 @@ struct QuestFormSheet: View {
                     }
 
                     if let selectedBoss {
-                        Text("~\(estimatedBossDamage) HP per completion (\(estimatedBossDamagePercentage)% of \(selectedBoss.title)'s max HP).")
+                        Text("Moves \(selectedBoss.title) about \(estimatedBossDamagePercentage)% each time you close this.")
                             .font(GW.sans(11))
                             .foregroundStyle(GW.mute)
                     } else {
-                        Text("Completing this quest will damage the linked boss.")
+                        Text("Closing this habit moves the linked goal.")
                             .font(GW.sans(11))
                             .foregroundStyle(GW.mute)
                     }
@@ -649,7 +649,7 @@ struct QuestFormSheet: View {
                         Text("Reminder")
                             .font(GW.sans(13, weight: .semibold))
                             .foregroundStyle(GW.ink)
-                        Text("Optional nudge for this quest.")
+                        Text("An optional nudge for this habit.")
                             .font(GW.sans(11))
                             .foregroundStyle(GW.mute)
                     }
@@ -792,7 +792,7 @@ struct QuestFormSheet: View {
             Text("Add it before it slips.")
                 .font(GW.display(24, weight: .semibold))
                 .foregroundStyle(GW.ink)
-            Text("Name the quest, choose the effort, and SIL fills in safe defaults.")
+            Text("Name the habit, choose the effort, and SIL fills in sensible defaults.")
                 .font(GW.sans(12))
                 .foregroundStyle(GW.mute)
                 .lineSpacing(2)
@@ -802,7 +802,7 @@ struct QuestFormSheet: View {
     private var quickTitleCard: some View {
         GWCard(paddingX: 14, paddingY: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("QUEST NAME")
+                Text("NAME")
                     .font(GW.mono(9, weight: .medium))
                     .tracking(2)
                     .foregroundStyle(GW.mute)
@@ -843,10 +843,10 @@ struct QuestFormSheet: View {
                         .tracking(2)
                         .foregroundStyle(GW.mute)
                     Spacer()
-                    Text("+\(quickQuestXP) XP")
+                    Text("+\(quickQuestXP) progress")
                         .font(GW.display(18, weight: .bold))
                         .foregroundStyle(GW.cyan)
-                    Text("+\(quickQuestGold)g")
+                    Text("+\(quickQuestGold) CR")
                         .font(GW.mono(11, weight: .semibold))
                         .foregroundStyle(GW.amber)
                 }
@@ -969,7 +969,7 @@ struct QuestFormSheet: View {
                     }
                 }
 
-                Text("Attributes receive stat XP when this quest is cleared.")
+                Text("These attributes grow when you close this habit.")
                     .font(GW.sans(11))
                     .foregroundStyle(GW.mute)
             }
@@ -998,7 +998,7 @@ struct QuestFormSheet: View {
                         Text("Reminder")
                             .font(GW.sans(13, weight: .semibold))
                             .foregroundStyle(GW.ink)
-                        Text("Optional daily nudge for this quest.")
+                        Text("An optional daily nudge.")
                             .font(GW.sans(11))
                             .foregroundStyle(GW.mute)
                     }
@@ -1016,7 +1016,7 @@ struct QuestFormSheet: View {
     }
 
     private var quickSaveButton: some View {
-        GWButton(label: "ADD QUEST", variant: .primary) {
+        GWButton(label: "ADD HABIT", variant: .primary) {
             saveQuickQuest()
         }
         .disabled(!quickQuestCanSave)
@@ -1026,8 +1026,8 @@ struct QuestFormSheet: View {
 
     private var questReadinessCard: some View {
         let accentColor = isValid
-            ? SystemTheme.successGreen
-            : (showValidationFeedback ? SystemTheme.warningOrange : SystemTheme.primaryBlue)
+            ? S.ink
+            : (showValidationFeedback ? S.ink2 : S.accent)
 
         return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
@@ -1043,10 +1043,10 @@ struct QuestFormSheet: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(isValid ? "Quest ready" : "Quest requirements")
                         .font(SystemTypography.titleSmall)
-                        .foregroundStyle(SystemTheme.textPrimary)
+                        .foregroundStyle(S.ink)
                     Text(validationSummaryText)
                         .font(SystemTypography.caption)
-                        .foregroundStyle(showValidationFeedback && !isValid ? SystemTheme.warningOrange : SystemTheme.textSecondary)
+                        .foregroundStyle(showValidationFeedback && !isValid ? S.ink2 : S.ink2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -1086,16 +1086,16 @@ struct QuestFormSheet: View {
             }
 
             if showValidationFeedback && !isValid {
-                Text("Tip: the Create button will explain what is missing, but the quest can only be created after every required item above is checked.")
+                Text("The Create button says what is still missing. Everything above has to be set before the habit can be saved.")
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(SystemTheme.backgroundSecondary)
+                .fill(S.card)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 18)
@@ -1107,12 +1107,12 @@ struct QuestFormSheet: View {
             x: 0,
             y: 4
         )
-        .animation(.easeInOut(duration: SystemTheme.animationFast), value: isValid)
-        .animation(.easeInOut(duration: SystemTheme.animationFast), value: showValidationFeedback)
+        .animation(.easeInOut(duration: S.Motion.fast), value: isValid)
+        .animation(.easeInOut(duration: S.Motion.fast), value: showValidationFeedback)
     }
 
     private func requirementRow(title: String, detail: String, isComplete: Bool, showWarning: Bool) -> some View {
-        let color = isComplete ? SystemTheme.successGreen : (showWarning ? SystemTheme.warningOrange : SystemTheme.textTertiary)
+        let color = isComplete ? S.ink : (showWarning ? S.ink2 : S.ink3)
 
         return HStack(spacing: 10) {
             Image(systemName: isComplete ? "checkmark.circle.fill" : "circle")
@@ -1123,7 +1123,7 @@ struct QuestFormSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(SystemTypography.mono(12, weight: .bold))
-                    .foregroundStyle(SystemTheme.textPrimary)
+                    .foregroundStyle(S.ink)
                 Text(detail)
                     .font(SystemTypography.captionSmall)
                     .foregroundStyle(color)
@@ -1146,7 +1146,7 @@ struct QuestFormSheet: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Target Value")
                     .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
 
                 HStack {
                     Button {
@@ -1166,7 +1166,7 @@ struct QuestFormSheet: View {
         case .healthKit:
             HStack {
                 Text("Health Data Type")
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
                 Spacer()
                 Button {
                     HapticManager.shared.selection()
@@ -1179,17 +1179,17 @@ struct QuestFormSheet: View {
 
             HStack {
                 Image(systemName: healthKitType.icon)
-                    .foregroundStyle(SystemTheme.primaryBlue)
+                    .foregroundStyle(S.accent)
                     .frame(width: 22)
                 Text("Source: Apple Health")
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.textTertiary)
+                    .foregroundStyle(S.ink3)
                 Spacer()
             }
 
             HStack {
                 Text("Target")
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
                 Spacer()
                 Button {
                     HapticManager.shared.selection()
@@ -1199,14 +1199,14 @@ struct QuestFormSheet: View {
                 }
                 .buttonStyle(.plain)
                 Text(healthKitType.unit)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
             }
 
         case .location:
             VStack(alignment: .leading, spacing: 4) {
                 Text("Address")
                     .font(SystemTypography.caption)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
 
                 TextField(
                     "e.g. 1 Infinite Loop, Cupertino",
@@ -1221,10 +1221,10 @@ struct QuestFormSheet: View {
             if addressAutocomplete.isSearching {
                 HStack(spacing: 8) {
                     ProgressView()
-                        .tint(SystemTheme.primaryBlue)
+                        .tint(S.accent)
                     Text("Searching Apple Maps…")
                         .font(SystemTypography.captionSmall)
-                        .foregroundStyle(SystemTheme.textSecondary)
+                        .foregroundStyle(S.ink2)
                 }
             }
 
@@ -1237,11 +1237,11 @@ struct QuestFormSheet: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(suggestion.primaryText)
                                     .font(SystemTypography.bodySmall)
-                                    .foregroundStyle(SystemTheme.textPrimary)
+                                    .foregroundStyle(S.ink)
                                 if let secondary = suggestion.secondaryText, !secondary.isEmpty {
                                     Text(secondary)
                                         .font(SystemTypography.captionSmall)
-                                        .foregroundStyle(SystemTheme.textTertiary)
+                                        .foregroundStyle(S.ink3)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1249,12 +1249,12 @@ struct QuestFormSheet: View {
                         }
                         if suggestion.id != addressAutocomplete.suggestions.last?.id {
                             Divider()
-                                .overlay(SystemTheme.borderPrimary)
+                                .overlay(S.line2)
                         }
                     }
                 }
                 .padding(.horizontal, 10)
-                .background(SystemTheme.backgroundSecondary)
+                .background(S.card)
                 .clipShape(RoundedRectangle(cornerRadius: SystemRadius.small))
             }
 
@@ -1264,13 +1264,13 @@ struct QuestFormSheet: View {
                 HStack {
                     if isValidatingAddress {
                         ProgressView()
-                            .tint(SystemTheme.primaryBlue)
+                            .tint(S.accent)
                     } else {
                         Image(systemName: "map.fill")
-                            .foregroundStyle(SystemTheme.primaryBlue)
+                            .foregroundStyle(S.accent)
                     }
                     Text(isValidatingAddress ? "Validating with Apple Maps..." : "Validate Address (Apple Maps)")
-                        .foregroundStyle(SystemTheme.textPrimary)
+                        .foregroundStyle(S.ink)
                     Spacer()
                 }
             }
@@ -1278,7 +1278,7 @@ struct QuestFormSheet: View {
 
             HStack {
                 Text("Minimum stay")
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
                 Spacer()
                 Button {
                     HapticManager.shared.selection()
@@ -1291,7 +1291,7 @@ struct QuestFormSheet: View {
 
             HStack {
                 Text("Tracking radius")
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
                 Spacer()
                 Button {
                     HapticManager.shared.selection()
@@ -1318,10 +1318,10 @@ struct QuestFormSheet: View {
                         VStack(spacing: 4) {
                             Image(systemName: "mappin.circle.fill")
                                 .font(.system(size: 22))
-                                .foregroundStyle(SystemTheme.primaryBlue)
+                                .foregroundStyle(S.accent)
                             Text("Target")
                                 .font(SystemTypography.captionSmall)
-                                .foregroundStyle(SystemTheme.textSecondary)
+                                .foregroundStyle(S.ink2)
                         }
                     }
                 }
@@ -1329,7 +1329,7 @@ struct QuestFormSheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: SystemRadius.small))
                 .overlay(
                     RoundedRectangle(cornerRadius: SystemRadius.small)
-                        .stroke(SystemTheme.borderSecondary, lineWidth: 1)
+                        .stroke(S.line, lineWidth: 1)
                 )
 
                 Button {
@@ -1342,29 +1342,29 @@ struct QuestFormSheet: View {
 
             HStack(alignment: .top) {
                 Image(systemName: "location.circle.fill")
-                    .foregroundStyle(SystemTheme.statAgility)
-                Text("Quest auto-completes after you stay within \(radiusLabel) for the minimum time.")
+                    .foregroundStyle(S.ink)
+                Text("Closes on its own once you stay within \(radiusLabel) for the minimum time.")
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
             }
 
             if let locationCoordinate {
                 Text("Saved: \(locationCoordinate.locationName)")
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.successGreen)
+                    .foregroundStyle(S.ink)
 
-                Text("Tracking armed after save. The app confirms live status on the quest card.")
+                Text("Tracking starts once you save. The habit row shows live status.")
                     .font(SystemTypography.captionSmall)
-                    .foregroundStyle(SystemTheme.textSecondary)
+                    .foregroundStyle(S.ink2)
             }
 
             if let locationValidationMessage {
                 HStack(alignment: .top, spacing: 6) {
                     Image(systemName: locationValidationIsError ? "xmark.octagon.fill" : "checkmark.seal.fill")
-                        .foregroundStyle(locationValidationIsError ? SystemTheme.criticalRed : SystemTheme.successGreen)
+                        .foregroundStyle(locationValidationIsError ? S.warn : S.ink)
                     Text(locationValidationMessage)
                         .font(SystemTypography.captionSmall)
-                        .foregroundStyle(locationValidationIsError ? SystemTheme.criticalRed : SystemTheme.successGreen)
+                        .foregroundStyle(locationValidationIsError ? S.warn : S.ink)
                 }
             }
 
@@ -1377,7 +1377,7 @@ struct QuestFormSheet: View {
     private var trackingFooter: some View {
         switch trackingType {
         case .manual:
-            Text("You manually mark this quest complete.")
+            Text("You mark this one done yourself.")
         case .healthKit:
             if healthKitType == .workoutCount {
                 Text("Auto-completes when Apple Health records workouts from Fitness/Activity, Apple Watch, or synced apps like Strava/Peloton.")
@@ -1385,7 +1385,7 @@ struct QuestFormSheet: View {
                 Text("Progress auto-tracked with Apple Health (including data synced from Fitness, Strava, Peloton, and more).")
             }
         case .location:
-            Text("Validate with Apple Maps first. Quest auto-completes after staying within the configured radius (\(radiusLabel)) for the configured duration.")
+            Text("Check the address in Apple Maps first. The habit closes on its own after you stay within \(radiusLabel) for the set time.")
         case .timer:
             EmptyView()
         }
@@ -1873,21 +1873,21 @@ struct QuestFormSheet: View {
         HStack(spacing: 8) {
             Text(label.uppercased())
                 .font(SystemTypography.mono(10, weight: .bold))
-                .foregroundStyle(SystemTheme.textTertiary)
+                .foregroundStyle(S.ink3)
             Text(value)
                 .font(SystemTypography.mono(14, weight: .bold))
-                .foregroundStyle(SystemTheme.textPrimary)
+                .foregroundStyle(S.ink)
             Image(systemName: "chevron.up.chevron.down")
                 .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(SystemTheme.primaryBlue)
+                .foregroundStyle(S.accent)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(SystemTheme.backgroundSecondary)
+        .background(S.card)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(SystemTheme.borderSecondary, lineWidth: 1)
+                .stroke(S.line, lineWidth: 1)
         )
     }
 
@@ -2019,7 +2019,7 @@ private struct BottomHealthTypePickerSheet: View {
 
     var body: some View {
         ZStack {
-            SystemTheme.backgroundPrimary
+            S.bg
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -2046,7 +2046,7 @@ private struct BottomHealthTypePickerSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Health Parameter")
                 .font(SystemTypography.titleSmall)
-                .foregroundStyle(SystemTheme.textPrimary)
+                .foregroundStyle(S.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
                 .allowsTightening(true)
@@ -2056,9 +2056,9 @@ private struct BottomHealthTypePickerSheet: View {
                 .frame(width: 42, height: 4)
                 .clipShape(Capsule())
 
-            Text("Choose which Apple Health metric completes this quest.")
+            Text("Which Apple Health metric closes this habit.")
                 .font(SystemTypography.caption)
-                .foregroundStyle(SystemTheme.textSecondary)
+                .foregroundStyle(S.ink2)
                 .lineLimit(1)
                 .minimumScaleFactor(0.62)
                 .allowsTightening(true)
@@ -2069,7 +2069,7 @@ private struct BottomHealthTypePickerSheet: View {
     private var pickerBar: some View {
         VStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 3)
-                .fill(SystemTheme.textTertiary.opacity(0.45))
+                .fill(S.ink3.opacity(0.45))
                 .frame(width: 54, height: 5)
                 .padding(.top, 2)
                 .padding(.bottom, 12)
@@ -2089,7 +2089,7 @@ private struct BottomHealthTypePickerSheet: View {
 
                 Text("Apply")
                     .font(SystemTypography.body)
-                    .foregroundStyle(SystemTheme.textPrimary)
+                    .foregroundStyle(S.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .allowsTightening(true)
@@ -2123,7 +2123,7 @@ private struct BottomHealthTypePickerSheet: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(SystemTheme.backgroundElevated)
+                .fill(S.bg2)
                 .ignoresSafeArea(edges: .bottom)
         )
     }

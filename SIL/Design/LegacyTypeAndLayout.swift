@@ -1,113 +1,17 @@
 //
-//  SystemTheme.swift
+//  LegacyTypeAndLayout.swift
 //  SIL
 //
-//  Legacy token table. The screens outside Glasswork were written against the
-//  old neon "System" palette; SIL 2.0 replaces it with the quiet language in
-//  `SILTheme.swift`. Every token below now forwards to its closest SIL
-//  equivalent, so those screens pick up the new surface without a rewrite.
+//  What survives of the pre-SIL token table: the hex helpers, the type roles
+//  that forward to `S`, and the spacing, radius and modifier helpers the
+//  remaining older screens still call.
 //
-//  New code should use `S` directly. This shim shrinks as screens are rebuilt.
+//  The colour table is gone — every call site now reads `S` directly.
 //
 
 import SwiftUI
 import UIKit
 import CoreText
-
-// MARK: - System Theme
-
-/// The visual identity of SIL — quiet, typographic, one accent.
-struct SystemTheme {
-
-    // MARK: - Primary Colors
-    //
-    // SIL has a single accent instead of a blue/purple/cyan family. The old
-    // names are kept so existing call sites compile; they all resolve to the
-    // accent or to ink.
-
-    /// The one accent. Primary actions, live state, selected chips.
-    static var primaryBlue: Color { S.accent }
-    /// Accent as text or a thin stroke.
-    static var primaryPurple: Color { S.accentInk }
-    static var secondaryPurple: Color { S.accentInk }
-    static var accentCyan: Color { S.accentInk }
-
-    /// Warnings read as a desaturated clay, never as alarm red.
-    static var warningOrange: Color { S.ink2 }
-    static var criticalRed: Color { S.warn }
-
-    /// Success and currency are not colours in SIL — they are just ink.
-    static var successGreen: Color { S.ink }
-    static var goldColor: Color { S.ink }
-
-    // MARK: - Background Colors
-
-    static var backgroundPrimary: Color { S.bg }
-    static var backgroundSecondary: Color { S.card }
-    static var backgroundTertiary: Color { S.card2 }
-    static var backgroundElevated: Color { S.bg2 }
-
-    // MARK: - Text Colors
-
-    static var textPrimary: Color { S.ink }
-    static var textSecondary: Color { S.ink2 }
-    static var textTertiary: Color { S.ink3 }
-    static var textSystem: Color { S.accentInk }
-
-    // MARK: - Attribute Colors
-    //
-    // SIL 2.0 merges the six stats into four attributes (Body, Mind, Energy,
-    // Spirit) and distinguishes them by glyph, not by hue.
-
-    static var statStrength: Color { S.ink }
-    static var statIntelligence: Color { S.ink }
-    static var statAgility: Color { S.ink }
-    static var statVitality: Color { S.ink }
-    static var statWillpower: Color { S.ink }
-    static var statSpirit: Color { S.ink }
-
-    // MARK: - Gradients
-    //
-    // Flat ramps. SIL draws progress with ink on a hairline track, not with
-    // two-stop neon fills.
-
-    static var primaryGradient: LinearGradient {
-        LinearGradient(colors: [S.accent, S.accent], startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-
-    static var systemGlow: RadialGradient {
-        RadialGradient(colors: [S.glow, .clear], center: .center, startRadius: 0, endRadius: 150)
-    }
-
-    static var xpGradient: LinearGradient {
-        LinearGradient(colors: [S.ink, S.ink], startPoint: .leading, endPoint: .trailing)
-    }
-
-    static var hpGradient: LinearGradient {
-        LinearGradient(colors: [S.ink, S.ink], startPoint: .leading, endPoint: .trailing)
-    }
-
-    static var goldGradient: LinearGradient {
-        LinearGradient(colors: [S.ink, S.ink], startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-
-    // MARK: - Shadows
-
-    static var glowShadow: Color { S.glow }
-    static var cardShadow: Color { S.shadowColor }
-
-    // MARK: - Border Colors
-
-    static var borderPrimary: Color { S.line2 }
-    static var borderSecondary: Color { S.line }
-
-    // MARK: - Animation Durations
-
-    static let animationFast: Double = 0.2
-    static let animationNormal: Double = 0.3
-    static let animationSlow: Double = 0.5
-    static let animationVeryLong: Double = 1.0
-}
 
 // MARK: - Color Extension for Hex Support
 
@@ -266,11 +170,11 @@ struct SystemCardModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background(isElevated ? SystemTheme.backgroundElevated : SystemTheme.backgroundTertiary)
+            .background(isElevated ? S.bg2 : S.card2)
             .clipShape(RoundedRectangle(cornerRadius: SystemRadius.large))
             .overlay(
                 RoundedRectangle(cornerRadius: SystemRadius.large)
-                    .stroke(SystemTheme.borderPrimary, lineWidth: 1)
+                    .stroke(S.line2, lineWidth: 1)
             )
     }
 }
@@ -286,10 +190,10 @@ struct HolographicBorderModifier: ViewModifier {
                     .stroke(
                         AngularGradient(
                             colors: [
-                                SystemTheme.primaryBlue,
-                                SystemTheme.primaryPurple,
-                                SystemTheme.accentCyan,
-                                SystemTheme.primaryBlue
+                                S.accent,
+                                S.accentInk,
+                                S.accentInk,
+                                S.accent
                             ],
                             center: .center,
                             startAngle: .degrees(animationPhase),
@@ -311,7 +215,7 @@ struct HolographicBorderModifier: ViewModifier {
 extension View {
 
     /// Apply a glow effect
-    func glow(color: Color = SystemTheme.primaryBlue, radius: CGFloat = 10) -> some View {
+    func glow(color: Color = S.accent, radius: CGFloat = 10) -> some View {
         modifier(GlowModifier(color: color, radius: radius))
     }
 
@@ -327,7 +231,7 @@ extension View {
 
     /// Apply system background
     func systemBackground() -> some View {
-        self.background(SystemTheme.backgroundPrimary)
+        self.background(S.bg)
     }
 }
 
@@ -339,49 +243,32 @@ extension View {
             Group {
                 Text("Primary Colors")
                     .font(SystemTypography.headline)
-                    .foregroundStyle(SystemTheme.textPrimary)
+                    .foregroundStyle(S.ink)
 
                 HStack(spacing: 10) {
-                    colorSwatch("Blue", SystemTheme.primaryBlue)
-                    colorSwatch("Purple", SystemTheme.primaryPurple)
-                    colorSwatch("Cyan", SystemTheme.accentCyan)
-                }
-            }
-
-            Group {
-                Text("Stat Colors")
-                    .font(SystemTypography.headline)
-                    .foregroundStyle(SystemTheme.textPrimary)
-
-                HStack(spacing: 10) {
-                    colorSwatch("STR", SystemTheme.statStrength)
-                    colorSwatch("INT", SystemTheme.statIntelligence)
-                    colorSwatch("AGI", SystemTheme.statAgility)
-                }
-                HStack(spacing: 10) {
-                    colorSwatch("VIT", SystemTheme.statVitality)
-                    colorSwatch("WIL", SystemTheme.statWillpower)
-                    colorSwatch("SPI", SystemTheme.statSpirit)
+                    colorSwatch("Blue", S.accent)
+                    colorSwatch("Purple", S.accentInk)
+                    colorSwatch("Cyan", S.accentInk)
                 }
             }
 
             Group {
                 Text("Typography")
                     .font(SystemTypography.headline)
-                    .foregroundStyle(SystemTheme.textPrimary)
+                    .foregroundStyle(S.ink)
 
                 Text("99")
                     .font(SystemTypography.statLarge)
-                    .foregroundStyle(SystemTheme.primaryBlue)
+                    .foregroundStyle(S.accent)
 
-                Text("SYSTEM MESSAGE")
+                Text("Mono label")
                     .font(SystemTypography.systemMessage)
-                    .foregroundStyle(SystemTheme.textSystem)
+                    .foregroundStyle(S.ink2)
             }
         }
         .padding()
     }
-    .background(SystemTheme.backgroundPrimary)
+    .background(S.bg)
 }
 
 @ViewBuilder
@@ -394,6 +281,6 @@ private func colorSwatch(_ name: String, _ color: Color) -> some View {
 
         Text(name)
             .font(SystemTypography.captionSmall)
-            .foregroundStyle(SystemTheme.textSecondary)
+            .foregroundStyle(S.ink2)
     }
 }
