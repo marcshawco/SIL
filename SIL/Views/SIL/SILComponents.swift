@@ -208,6 +208,10 @@ struct SILSegmented<Value: Hashable>: View {
     var options: [(value: Value, label: String)]
     @Binding var selection: Value
     var height: CGFloat = 36
+    /// `true` spreads the segments across the available width. `false` sizes
+    /// each one to its label, for a control sitting in a toolbar or a header
+    /// where there is no width to divide up.
+    var fills: Bool = true
 
     var body: some View {
         HStack(spacing: 0) {
@@ -219,7 +223,9 @@ struct SILSegmented<Value: Hashable>: View {
                     Text(option.label)
                         .font(S.text(height > 34 ? 14 : 13, .medium))
                         .foregroundStyle(on ? S.ink : S.ink2)
-                        .frame(maxWidth: .infinity)
+                        .fixedSize(horizontal: !fills, vertical: false)
+                        .padding(.horizontal, fills ? 0 : 16)
+                        .frame(maxWidth: fills ? .infinity : nil)
                         .frame(height: height)
                         .background(
                             RoundedRectangle(cornerRadius: height / 2 - 1, style: .continuous)

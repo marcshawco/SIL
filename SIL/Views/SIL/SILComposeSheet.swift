@@ -102,9 +102,9 @@ struct SILComposeSheet: View {
                 SILSegmented(
                     options: [(Kind.habit, SILWord.habit), (Kind.goal, SILWord.goal)],
                     selection: $kind,
-                    height: 34
+                    height: 34,
+                    fills: false
                 )
-                .fixedSize()
 
                 Spacer()
 

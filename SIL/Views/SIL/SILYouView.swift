@@ -141,9 +141,9 @@ struct SILYouView: View {
                     SILSegmented(
                         options: [(true, "Shape"), (false, "List")],
                         selection: $showsRadar,
-                        height: 30
+                        height: 30,
+                        fills: false
                     )
-                    .frame(width: 128)
                 }
 
                 if showsRadar {
