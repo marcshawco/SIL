@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500&amp;family=Schibsted+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#08080A;font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#B0A3FF;text-decoration:none}a:hover{color:#FFFFFF}
+button,input{font-family:inherit;font-size:inherit;color:inherit}
+input::placeholder{color:var(--ink3)}
+*::-webkit-scrollbar{display:none}
+@keyframes silBreath{0%,100%{opacity:.35;transform:scale(.75)}50%{opacity:1;transform:scale(1)}}
+@keyframes silBurst{0%{transform:translate(0,0) rotate(0deg);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0}}
+</style>
+</helmet>
+<div style="min-height:100vh; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:56px; padding:48px 32px; box-sizing:border-box; background:#08080A; color:#F4F4F5">
+  <div style="width:236px; display:flex; flex-direction:column; gap:28px">
+    <div style="display:flex; flex-direction:column; gap:14px">
+      <svg width="44" height="44" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="15" fill="#16161A"></rect><path d="M13 52V38M27 52V25M41 12V49H54" fill="none" stroke="#F4F4F5" stroke-width="6"></path></svg>
+      <div style="display:flex; flex-direction:column; gap:6px">
+        <span style="font-size:22px; font-weight:600; letter-spacing:-0.02em">SIL 2.0</span>
+        <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:#84848D; line-height:1.6">Systematically Improving Lifestyle · prototype</span>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px">
+      <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:#84848D">Jump to</span>
+      <div style="display:flex; flex-wrap:wrap; gap:6px">
+        <sc-for list="{{ jumps }}" as="j" hint-placeholder-count="12">
+          <button onClick="{{ j.onTap }}" style="height:32px; padding:0 12px; border-radius:16px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:#D4D4D8; font-size:13px; cursor:pointer; white-space:nowrap">{{ j.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+    <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:#6B6B73; line-height:1.7">Tap rings to complete · Focus timer runs at demo speed · Tweaks: accent, mode</span>
+  </div>
+
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ isDark }}" hint-size="402px,874px">
+    <div data-sil-root="1" style="position:absolute; inset:0; overflow:hidden; --bg:#0A0A0C; --bg2:#111114; --card:#16161A; --card2:#222227; --chip:#2B2B31; --line:rgba(255,255,255,0.07); --line2:rgba(255,255,255,0.14); --ink:#F4F4F5; --ink2:#A6A6AE; --ink3:#84848D; --dot:rgba(255,255,255,0.13); --inv:#F4F4F5; --onInv:#0A0A0C; --glass:rgba(26,26,30,0.74); --scrim:rgba(0,0,0,0.62); --cardGrad:linear-gradient(155deg,#1D1D22 0%,#141417 100%); --shadow:0 30px 60px rgba(0,0,0,0.55); --hi:inset 0 1px 0 rgba(255,255,255,0.05); --accent:#5B3CFF; --accentInk:#B0A3FF; --onAccent:#FFFFFF; --glow:rgba(91,60,255,0.38); background:var(--bg); color:var(--ink); font-family:'Schibsted Grotesk',system-ui,sans-serif">
+
+      <sc-if value="{{ tabIs.today }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; inset:0; overflow-y:auto; padding:62px 20px 128px; box-sizing:border-box; scrollbar-width:none">
+
+          <sc-if value="{{ v.bento }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-direction:column; gap:14px">
+              <div style="display:flex; align-items:flex-end; justify-content:space-between; padding-top:6px">
+                <div style="display:flex; flex-direction:column; gap:8px">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">{{ dateShort }}</span>
+                  <span style="font-size:38px; font-weight:600; letter-spacing:-0.035em; line-height:1">Today</span>
+                </div>
+                <div style="display:flex; gap:10px">
+                  <button onClick="{{ openYou }}" style="height:46px; padding:0 16px; border-radius:23px; border:none; background:var(--card2); color:var(--ink); display:flex; align-items:center; gap:8px; cursor:pointer; font-family:'Martian Mono',ui-monospace,monospace; font-size:11px; letter-spacing:0.02em">{{ creditsText }}<span style="color:var(--ink3)">CR</span></button>
+                  <button onClick="{{ openHabits }}" style="width:46px; height:46px; border-radius:50%; border:none; background:var(--card2); color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7.5h9M17 7.5h3M15 5.5v4M4 16.5h3M11 16.5h9M9 14.5v4"></path></svg></button>
+                </div>
+              </div>
+              <p style="margin:0 0 4px; font-size:17px; line-height:1.35; color:var(--ink2)">{{ coachA }} {{ coachB }}</p>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                <button onClick="{{ openYou }}" style="height:176px; padding:18px; border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); display:flex; flex-direction:column; justify-content:space-between; text-align:left; cursor:pointer; color:var(--ink)">
+                  <div style="display:flex; justify-content:space-between; width:100%">
+                    <div style="position:relative; width:76px; height:76px">
+                      <svg width="76" height="76" viewBox="0 0 76 76" style="position:absolute; inset:0; transform:rotate(-90deg)"><circle cx="38" cy="38" r="32" fill="none" stroke="var(--line2)" stroke-width="2.5"></circle><circle cx="38" cy="38" r="32" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="201.06" stroke-dashoffset="{{ momentumOff }}" style="transition:stroke-dashoffset .6s"></circle></svg>
+                      <span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:500; letter-spacing:-0.03em">{{ player.momentum }}</span>
+                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="1.6" stroke-linecap="round"><path d="M4 7.5h9M17 7.5h3M15 5.5v4M4 16.5h3M11 16.5h9M9 14.5v4"></path></svg>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:3px">
+                    <span style="font-size:18px; font-weight:500; letter-spacing:-0.01em">Momentum</span>
+                    <span style="font-size:14px; color:var(--ink2)">{{ player.streak }}-day streak</span>
+                  </div>
+                </button>
+                <button onClick="{{ openYou }}" style="height:176px; padding:18px; border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); display:flex; flex-direction:column; justify-content:space-between; text-align:left; cursor:pointer; color:var(--ink)">
+                  <div style="display:flex; align-items:baseline; gap:6px">
+                    <span style="font-size:66px; font-weight:500; letter-spacing:-0.055em; line-height:0.9">{{ player.level }}</span>
+                    <span style="font-size:20px; color:var(--ink3); letter-spacing:-0.02em">lvl</span>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:8px; width:100%">
+                    <div style="height:3px; border-radius:2px; background:var(--line2); overflow:hidden"><div style="height:100%; width:{{ levelW }}; background:var(--ink); transition:width .6s"></div></div>
+                    <div style="display:flex; flex-direction:column; gap:3px">
+                      <span style="font-size:18px; font-weight:500; letter-spacing:-0.01em">Level</span>
+                      <span style="font-size:14px; color:var(--ink2)">{{ toNext }} to level {{ nextLevel }}</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <button onClick="{{ openHabits }}" style="padding:22px 20px 18px; border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); display:flex; flex-direction:column; gap:22px; text-align:left; cursor:pointer; color:var(--ink)">
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:100%">
+                  <sc-for list="{{ months }}" as="m" hint-placeholder-count="3">
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:12px">
+                      <span style="font-size:12px; font-weight:500; color:var(--ink2)">{{ m.name }}</span>
+                      <div style="display:grid; grid-template-columns:repeat(7,5px); gap:6px">
+                        <sc-for list="{{ m.cells }}" as="c">
+                          <span style="width:5px; height:5px; border-radius:50%; background:{{ c.bg }}; opacity:{{ c.op }}"></span>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex; align-items:center; gap:14px; width:100%">
+                  <div style="position:relative; width:56px; height:56px; flex:none">
+                    <svg width="56" height="56" viewBox="0 0 56 56" style="position:absolute; inset:0; transform:rotate(-90deg)"><circle cx="28" cy="28" r="24" fill="none" stroke="var(--line2)" stroke-width="2.5"></circle><circle cx="28" cy="28" r="24" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="{{ dayOff }}" style="transition:stroke-dashoffset .6s"></circle></svg>
+                    <span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:500">{{ leftCount }}</span>
+                  </div>
+                  <div style="flex:1; display:flex; flex-direction:column; gap:3px">
+                    <span style="font-size:18px; font-weight:500; letter-spacing:-0.01em">Habits left today</span>
+                    <span style="font-size:14px; color:var(--ink2)">{{ doneCount }} of {{ totalCount }} done</span>
+                  </div>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"></path></svg>
+                </div>
+              </button>
+
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 2px 0">
+                <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Next up</span>
+                <button onClick="{{ openHabits }}" style="border:none; background:transparent; color:var(--ink2); font-size:14px; cursor:pointer; padding:6px 0">See all</button>
+              </div>
+              <div style="display:flex; flex-direction:column">
+                <sc-for list="{{ nextUp }}" as="h" hint-placeholder-count="4">
+                  <div style="display:flex; align-items:center; gap:14px; padding:9px 0">
+                    <button onClick="{{ h.onTap }}" style="width:50px; height:50px; border-radius:50%; position:relative; border:none; background:var(--card2); padding:0; cursor:pointer; color:var(--ink); flex:none; display:flex; align-items:center; justify-content:center">
+                      <svg width="50" height="50" viewBox="0 0 48 48" style="position:absolute; inset:0; transform:rotate(-90deg)"><circle cx="24" cy="24" r="21" fill="none" stroke="var(--line2)" stroke-width="2"></circle><circle cx="24" cy="24" r="21" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-dasharray="131.95" stroke-dashoffset="{{ h.off21 }}"></circle></svg>
+                      <svg width="12" height="12" viewBox="0 0 12 12" style="position:relative"><path d="{{ h.glyph }}" fill="currentColor"></path></svg>
+                    </button>
+                    <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px">
+                      <span style="font-size:17px; font-weight:500; letter-spacing:-0.01em">{{ h.title }}</span>
+                      <span style="font-size:14px; color:var(--ink2)">{{ h.sub }}</span>
+                    </div>
+                    <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; color:var(--ink3)">{{ h.pts }}</span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ allClear }}">
+                  <p style="margin:0; padding:14px 0; font-size:16px; color:var(--ink2)">Nothing left today. Rest is part of it.</p>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ tabIs.goals }}">
+        <div style="position:absolute; inset:0; overflow-y:auto; padding:62px 20px 128px; box-sizing:border-box; scrollbar-width:none">
+          <div style="display:flex; flex-direction:column; gap:14px">
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; padding-top:6px">
+              <div style="display:flex; flex-direction:column; gap:8px">
+                <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Was bosses · long fights</span>
+                <span style="font-size:38px; font-weight:600; letter-spacing:-0.035em; line-height:1">Goals</span>
+              </div>
+              <button onClick="{{ openCreateGoal }}" style="width:46px; height:46px; border-radius:50%; border:none; background:var(--card2); color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+            </div>
+            <p style="margin:0 0 4px; font-size:17px; line-height:1.35; color:var(--ink2); text-wrap:pretty">{{ goalsCoach }}</p>
+            <sc-for list="{{ goalsV }}" as="g" hint-placeholder-count="3">
+              <button onClick="{{ g.onOpen }}" style="padding:20px 20px 18px; border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); display:flex; flex-direction:column; gap:16px; text-align:left; cursor:pointer; color:var(--ink); width:100%">
+                <div style="display:flex; justify-content:space-between; width:100%; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)"><span>{{ g.idx }} · {{ g.kind }}</span><span>{{ g.dayText }}</span></div>
+                <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap">
+                  <span style="font-size:46px; font-weight:500; letter-spacing:-0.05em; line-height:0.95">{{ g.value }}</span>
+                  <span style="font-size:15px; color:var(--ink3)">{{ g.unitText }} {{ g.ofText }}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:3px">
+                  <span style="font-size:19px; font-weight:500; letter-spacing:-0.015em">{{ g.title }}</span>
+                  <span style="font-size:14px; color:var(--ink2)">{{ g.sourceLine }}</span>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(36,1fr); gap:3px; height:16px; width:100%">
+                  <sc-for list="{{ g.ticks }}" as="t"><span style="background:{{ t.bg }}; border-radius:1px; transition:background .4s"></span></sc-for>
+                </div>
+                <div style="display:flex; justify-content:space-between; width:100%; font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.04em; text-transform:uppercase"><span style="color:var(--ink)">{{ g.pctText }}</span><span style="color:var(--ink3)">{{ g.etaShort }}</span></div>
+              </button>
+            </sc-for>
+            <button onClick="{{ openCreateGoal }}" style="height:92px; border-radius:28px; border:1.5px dashed var(--line2); background:transparent; color:var(--ink2); display:flex; align-items:center; gap:14px; padding:0 22px; cursor:pointer; text-align:left">
+              <span style="width:44px; height:44px; border-radius:50%; background:var(--card2); color:var(--ink); display:flex; align-items:center; justify-content:center; flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>
+              <span style="display:flex; flex-direction:column; gap:3px"><span style="font-size:17px; font-weight:500; color:var(--ink)">New goal</span><span style="font-size:14px">Something that takes weeks, not minutes</span></span>
+            </button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ tabIs.focus }}">
+        <div style="position:absolute; inset:0; overflow-y:auto; padding:62px 20px 128px; box-sizing:border-box; scrollbar-width:none">
+          <sc-if value="{{ notRunning }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-direction:column; gap:18px">
+              <div style="display:flex; flex-direction:column; gap:8px; padding-top:6px">
+                <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Was training · deep work</span>
+                <span style="font-size:38px; font-weight:600; letter-spacing:-0.035em; line-height:1">Focus</span>
+              </div>
+              <p style="margin:0; font-size:17px; line-height:1.35; color:var(--ink2)">One thing, properly. Phone face down.</p>
+              <div style="position:relative; width:300px; height:300px; align-self:center">
+                <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute; inset:0">
+                  <sc-for list="{{ dial }}" as="d"><line x1="{{ d.x1 }}" y1="{{ d.y1 }}" x2="{{ d.x2 }}" y2="{{ d.y2 }}" stroke="var(--ink)" stroke-width="{{ d.w }}" stroke-linecap="round" opacity="{{ d.op }}"></line></sc-for>
+                </svg>
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px">
+                  <span style="font-size:104px; font-weight:500; letter-spacing:-0.06em; line-height:0.9">{{ focusMins }}</span>
+                  <span style="font-size:15px; color:var(--ink2)">minutes</span>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:6px">
+                <button onClick="{{ focusMinus }}" style="width:44px; height:44px; border-radius:50%; border:1px solid var(--line2); background:transparent; color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 12h14"></path></svg></button>
+                <sc-for list="{{ durOpts }}" as="o" hint-placeholder-count="5">
+                  <button onClick="{{ o.onTap }}" style="width:44px; height:44px; border-radius:50%; border:none; background:{{ o.bg }}; color:{{ o.ink }}; font-size:15px; font-weight:500; cursor:pointer; padding:0; flex:none">{{ o.label }}</button>
+                </sc-for>
+                <button onClick="{{ focusPlus }}" style="width:44px; height:44px; border-radius:50%; border:1px solid var(--line2); background:transparent; color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px">
+                <sc-for list="{{ focusAttrOpts }}" as="o" hint-placeholder-count="4">
+                  <button onClick="{{ o.onTap }}" style="height:44px; border-radius:22px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; display:flex; align-items:center; justify-content:center; gap:7px; font-size:14px; font-weight:500; cursor:pointer; padding:0">
+                    <svg width="10" height="10" viewBox="0 0 12 12"><path d="{{ o.glyph }}" fill="currentColor"></path></svg>{{ o.name }}
+                  </button>
+                </sc-for>
+              </div>
+              <input value="{{ focus.label }}" onChange="{{ onFocusLabel }}" placeholder="What are you working on?" style="height:56px; border-radius:20px; border:1px solid var(--line); background:var(--card); padding:0 20px; font-size:16px; color:var(--ink); outline:none; box-sizing:border-box; width:100%">
+              <span style="text-align:center; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink3)">{{ focusReward }}</span>
+              <button onClick="{{ startFocus }}" style="height:58px; border-radius:29px; border:none; background:var(--accent); color:var(--onAccent); font-size:17px; font-weight:600; cursor:pointer">Start focus</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isRunning }}">
+            <div style="display:flex; flex-direction:column; gap:20px">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding-top:4px">
+                <span style="display:flex; align-items:center; gap:10px; font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink)">{{ liveDot }}{{ liveLabel }} · {{ focusAttrName }}</span>
+                <button onClick="{{ endFocus }}" style="height:44px; padding:0 20px; border-radius:22px; border:1.5px solid var(--line2); background:transparent; color:var(--ink); font-size:15px; font-weight:500; cursor:pointer; white-space:nowrap">End early</button>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px">
+                <span style="font-size:30px; font-weight:600; letter-spacing:-0.03em; line-height:1.1">{{ focusTitle }}</span>
+                <span style="font-size:15px; color:var(--ink2)">{{ focusPctText }} through · {{ focusElapsed }} elapsed</span>
+              </div>
+              <div style="position:relative; width:300px; height:300px; align-self:center">
+                <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute; inset:0">
+                  <sc-for list="{{ dial }}" as="d"><line x1="{{ d.x1 }}" y1="{{ d.y1 }}" x2="{{ d.x2 }}" y2="{{ d.y2 }}" stroke="var(--ink)" stroke-width="{{ d.w }}" stroke-linecap="round" opacity="{{ d.op }}" style="transition:opacity .4s"></line></sc-for>
+                </svg>
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px">
+                  <span style="font-size:72px; font-weight:500; letter-spacing:-0.05em; line-height:0.9; font-variant-numeric:tabular-nums">{{ focusClock }}</span>
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Remaining</span>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                <div style="padding:18px; border-radius:24px; border:1px solid var(--line); background:var(--cardGrad); display:flex; flex-direction:column; gap:6px">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Progress so far</span>
+                  <span style="font-size:32px; font-weight:500; letter-spacing:-0.04em">{{ earnedPts }}</span>
+                </div>
+                <div style="padding:18px; border-radius:24px; border:1px solid var(--line); background:var(--cardGrad); display:flex; flex-direction:column; gap:6px">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Credits so far</span>
+                  <span style="font-size:32px; font-weight:500; letter-spacing:-0.04em">{{ earnedCr }}</span>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:14px; padding:12px 12px 12px 16px; border-radius:28px; background:var(--card2)">
+                <button onClick="{{ togglePause }}" style="width:52px; height:52px; border-radius:50%; border:none; background:var(--inv); color:var(--onInv); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex:none">
+                  <sc-if value="{{ isPaused }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"></path></svg></sc-if>
+                  <sc-if value="{{ notPaused }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6v12M15 6v12"></path></svg></sc-if>
+                </button>
+                <div style="flex:1; display:flex; flex-direction:column; gap:2px">
+                  <span style="font-size:17px; font-weight:500">{{ pauseLabel }}</span>
+                  <span style="font-size:13px; color:var(--ink2)">Ending early keeps partial credit</span>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ tabIs.you }}">
+        <div style="position:absolute; inset:0; overflow-y:auto; padding:62px 20px 128px; box-sizing:border-box; scrollbar-width:none">
+          <div style="display:flex; flex-direction:column; gap:14px">
+            <div style="display:flex; align-items:center; gap:14px; padding:6px 0 6px">
+              <div style="position:relative; width:64px; height:64px; flex:none">
+                <svg width="64" height="64" viewBox="0 0 64 64" style="position:absolute; inset:0; transform:rotate(-90deg)"><circle cx="32" cy="32" r="30" fill="none" stroke="var(--line2)" stroke-width="2"></circle><circle cx="32" cy="32" r="30" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="{{ avatarOff }}"></circle></svg>
+                <span style="position:absolute; inset:6px; border-radius:50%; background:var(--card2); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:600">A</span>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; gap:4px; min-width:0">
+                <span style="font-size:28px; font-weight:600; letter-spacing:-0.03em; line-height:1">{{ player.name }}</span>
+                <span style="font-size:14px; color:var(--ink2)">{{ title }}</span>
+              </div>
+              <button onClick="{{ openSettings }}" style="width:46px; height:46px; border-radius:50%; border:none; background:var(--card2); color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7.5h9M17 7.5h3M15 5.5v4M4 16.5h3M11 16.5h9M9 14.5v4"></path></svg></button>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+              <div style="height:176px; padding:18px; box-sizing:border-box; border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); display:flex; flex-direction:column; justify-content:space-between">
+                <div style="display:flex; align-items:baseline; gap:6px"><span style="font-size:66px; font-weight:500; letter-spacing:-0.055em; line-height:0.9">{{ player.level }}</span><span style="font-size:20px; color:var(--ink3)">lvl</span></div>
+                <div style="display:flex; flex-direction:column; gap:8px">
+                  <div style="height:3px; border-radius:2px; background:var(--line2); overflow:hidden"><div style="height:100%; width:{{ levelW }}; background:var(--ink); transition:width .6s"></div></div>
+                  <span style="font-size:14px; color:var(--ink2)">{{ progressText }} progress</span>
+                </div>
+              </div>
+              <div style="height:176px; padding:18px; box-sizing:border-box; border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); display:flex; flex-direction:column; justify-content:space-between">
+                <div style="display:flex; align-items:flex-end; gap:3px; height:40px">
+                  <sc-for list="{{ meterBars }}" as="b" hint-placeholder-count="20"><span style="flex:1; height:{{ b.h }}; background:{{ b.bg }}; border-radius:1px"></span></sc-for>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:3px">
+                  <span style="font-size:34px; font-weight:500; letter-spacing:-0.04em; line-height:1">{{ player.momentum }}</span>
+                  <span style="font-size:14px; color:var(--ink2)">Momentum · {{ player.streak }} days</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding:20px; border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); display:flex; flex-direction:column; gap:16px">
+              <div style="display:flex; align-items:center; justify-content:space-between">
+                <span style="font-size:18px; font-weight:500">Attributes</span>
+                <div style="display:flex; padding:3px; border-radius:18px; background:var(--card2)">
+                  <sc-for list="{{ attrViewOpts }}" as="o" hint-placeholder-count="2">
+                    <button onClick="{{ o.onTap }}" style="height:30px; padding:0 14px; border-radius:15px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; box-shadow:{{ o.sh }}; font-size:13px; font-weight:500; cursor:pointer">{{ o.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <sc-if value="{{ attrShape }}" hint-placeholder-val="{{ true }}">
+                <div style="position:relative; width:260px; height:230px; align-self:center">
+                  <svg width="200" height="200" viewBox="0 0 200 200" style="position:absolute; left:30px; top:15px">
+                    <sc-for list="{{ rings }}" as="r"><polygon points="{{ r.pts }}" fill="none" stroke="var(--line2)" stroke-width="1"></polygon></sc-for>
+                    <line x1="100" y1="26" x2="100" y2="174" stroke="var(--line)" stroke-width="1"></line>
+                    <line x1="26" y1="100" x2="174" y2="100" stroke="var(--line)" stroke-width="1"></line>
+                    <polygon points="{{ radar }}" fill="var(--accent)" fill-opacity="0.22" stroke="var(--accentInk)" stroke-width="1.5" stroke-linejoin="round" style="transition:all .5s"></polygon>
+                  </svg>
+                  <span style="position:absolute; top:0; left:0; right:0; text-align:center; font-family:'Martian Mono',ui-monospace,monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink2)">Body {{ attrsV.body }}</span>
+                  <span style="position:absolute; bottom:0; left:0; right:0; text-align:center; font-family:'Martian Mono',ui-monospace,monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink2)">Energy {{ attrsV.energy }}</span>
+                  <span style="position:absolute; top:108px; right:-14px; font-family:'Martian Mono',ui-monospace,monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink2); writing-mode:vertical-rl">Mind {{ attrsV.mind }}</span>
+                  <span style="position:absolute; top:108px; left:-14px; font-family:'Martian Mono',ui-monospace,monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink2); writing-mode:vertical-rl; transform:rotate(180deg)">Spirit {{ attrsV.spirit }}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ attrListView }}">
+                <div style="display:flex; flex-direction:column; gap:14px">
+                  <sc-for list="{{ attrList }}" as="a" hint-placeholder-count="4">
+                    <div style="display:flex; flex-direction:column; gap:8px">
+                      <div style="display:flex; align-items:center; gap:10px">
+                        <svg width="11" height="11" viewBox="0 0 12 12"><path d="{{ a.glyph }}" fill="var(--ink)"></path></svg>
+                        <span style="flex:1; font-size:16px">{{ a.name }}</span>
+                        <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:12px; color:var(--ink2)">{{ a.value }}</span>
+                      </div>
+                      <div style="height:3px; border-radius:2px; background:var(--line2); overflow:hidden"><div style="height:100%; width:{{ a.w }}; background:var(--ink); transition:width .5s"></div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="padding:20px; border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); display:flex; flex-direction:column; gap:16px">
+              <div style="display:flex; align-items:baseline; justify-content:space-between">
+                <span style="font-size:18px; font-weight:500">Consistency</span>
+                <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">26 weeks</span>
+              </div>
+              <div style="display:flex; justify-content:space-between">
+                <sc-for list="{{ heat }}" as="c" hint-placeholder-count="26">
+                  <div style="display:flex; flex-direction:column; gap:4px">
+                    <sc-for list="{{ c.cells }}" as="d"><span style="width:7px; height:7px; border-radius:50%; background:{{ d.bg }}; opacity:{{ d.op }}"></span></sc-for>
+                  </div>
+                </sc-for>
+              </div>
+              <span style="font-size:14px; color:var(--ink2)">{{ totalText }} habits completed since April.</span>
+            </div>
+
+            <div style="display:flex; align-items:baseline; justify-content:space-between; padding:14px 2px 0">
+              <span style="font-size:24px; font-weight:600; letter-spacing:-0.025em">Rewards</span>
+              <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:11px; color:var(--ink)">{{ creditsText }} <span style="color:var(--ink3)">CR</span></span>
+            </div>
+            <p style="margin:-6px 2px 0; font-size:14px; color:var(--ink2)">Your rules. Credits come from required habits and focus.</p>
+            <div style="border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); padding:6px 18px">
+              <sc-for list="{{ rewardsV }}" as="r" hint-placeholder-count="5">
+                <div style="display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--line)">
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px">
+                    <span style="font-size:17px; font-weight:500">{{ r.name }}</span>
+                    <span style="font-size:13px; color:var(--ink2)">{{ r.note }} · {{ r.countText }}</span>
+                  </div>
+                  <button onClick="{{ r.onTap }}" style="height:40px; padding:0 16px; border-radius:20px; box-sizing:border-box; border:1px solid {{ r.border }}; background:{{ r.bg }}; color:{{ r.ink }}; font-family:'Martian Mono',ui-monospace,monospace; font-size:11px; cursor:pointer; flex:none">{{ r.label }}</button>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex; flex-direction:column; padding-top:14px">
+              <span style="font-size:24px; font-weight:600; letter-spacing:-0.025em; padding:0 2px 8px">Moments</span>
+              <sc-for list="{{ momentsV }}" as="m" hint-placeholder-count="5">
+                <div style="display:flex; align-items:baseline; gap:14px; padding:12px 2px; border-top:1px solid var(--line)">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; color:var(--ink3); width:42px; flex:none">{{ m.time }}</span>
+                  <span style="flex:1; font-size:15px">{{ m.text }}</span>
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; color:var(--ink2)">{{ m.tag }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px; padding-top:14px">
+              <span style="font-size:24px; font-weight:600; letter-spacing:-0.025em; padding:0 2px">Milestones</span>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                <sc-for list="{{ milestones }}" as="m" hint-placeholder-count="4">
+                  <div style="padding:16px; border-radius:22px; border:1px solid var(--line); background:var(--card); display:flex; flex-direction:column; gap:14px; opacity:{{ m.op }}">
+                    <span style="width:14px; height:14px; border-radius:50%; background:{{ m.mark }}"></span>
+                    <div style="display:flex; flex-direction:column; gap:3px">
+                      <span style="font-size:16px; font-weight:500">{{ m.name }}</span>
+                      <span style="font-size:13px; color:var(--ink2)">{{ m.note }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ pushIs.habits }}">
+        <div style="position:absolute; inset:0; z-index:8; background:var(--bg); overflow-y:auto; padding:62px 20px 128px; box-sizing:border-box; scrollbar-width:none">
+          <div style="display:flex; flex-direction:column; gap:18px">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <button onClick="{{ pop }}" style="width:46px; height:46px; border-radius:50%; border:none; background:var(--card2); color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"></path></svg></button>
+              <button onClick="{{ openCreateHabit }}" style="width:46px; height:46px; border-radius:50%; border:none; background:var(--card2); color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px">
+              <span style="font-size:38px; font-weight:600; letter-spacing:-0.035em; line-height:1">Habits</span>
+              <span style="font-size:16px; color:var(--ink2)">{{ totalCount }} today · {{ doneCount }} done</span>
+            </div>
+            <div style="display:flex; gap:8px; overflow-x:auto; margin:0 -20px; padding:0 20px; scrollbar-width:none">
+              <sc-for list="{{ filterOpts }}" as="o" hint-placeholder-count="5">
+                <button onClick="{{ o.onTap }}" style="height:40px; padding:0 18px; border-radius:20px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; font-size:15px; font-weight:500; cursor:pointer; flex:none">{{ o.label }}</button>
+              </sc-for>
+            </div>
+            <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+              <div style="display:flex; flex-direction:column; gap:2px">
+                <div style="display:flex; justify-content:space-between; padding:6px 0; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)"><span>{{ g.slot }}</span><span>{{ g.count }}</span></div>
+                <sc-for list="{{ g.items }}" as="h">
+                  <div style="margin:0 -12px; padding:4px 12px; border-radius:24px; background:{{ h.rowBg }}; border:1px solid {{ h.rowBorder }}; transition:background .2s">
+                    <div style="display:flex; align-items:center; gap:14px; padding:8px 0">
+                      <button onClick="{{ h.onTap }}" style="width:50px; height:50px; border-radius:50%; position:relative; border:none; background:var(--card2); padding:0; cursor:pointer; color:var(--ink); flex:none; display:flex; align-items:center; justify-content:center">
+                        <sc-if value="{{ h.notDone }}">
+                          <svg width="50" height="50" viewBox="0 0 48 48" style="position:absolute; inset:0; transform:rotate(-90deg)"><circle cx="24" cy="24" r="21" fill="none" stroke="var(--line2)" stroke-width="2"></circle><circle cx="24" cy="24" r="21" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-dasharray="131.95" stroke-dashoffset="{{ h.off21 }}"></circle></svg>
+                          <svg width="12" height="12" viewBox="0 0 12 12" style="position:relative"><path d="{{ h.glyph }}" fill="currentColor"></path></svg>
+                        </sc-if>
+                        <sc-if value="{{ h.isDone }}">
+                          <span style="position:absolute; inset:0; border-radius:50%; background:var(--inv); color:var(--onInv); display:flex; align-items:center; justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2L18.5 7.8"></path></svg></span>
+                        </sc-if>
+                      </button>
+                      <button onClick="{{ h.onExpand }}" style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; border:none; background:transparent; padding:0; text-align:left; cursor:pointer; color:var(--ink)">
+                        <span style="font-size:17px; font-weight:500; letter-spacing:-0.01em; color:{{ h.titleInk }}; text-decoration:{{ h.deco }}">{{ h.title }}</span>
+                        <span style="font-size:14px; color:var(--ink2)">{{ h.sub }}</span>
+                      </button>
+                      <button onClick="{{ h.onExpand }}" style="width:36px; height:44px; border:none; background:transparent; color:var(--ink2); cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 12h.01M12 12h.01M18 12h.01"></path></svg></button>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="transform:{{ h.chevRot }}; transition:transform .2s; flex:none"><path d="M9.5 6l6 6-6 6"></path></svg>
+                    </div>
+                    <sc-if value="{{ h.isExp }}">
+                      <div style="display:flex; flex-direction:column; gap:14px; padding:6px 0 14px">
+                        <div style="display:flex; flex-wrap:wrap; gap:6px">
+                          <span style="height:28px; padding:0 11px; border-radius:14px; background:var(--card2); display:flex; align-items:center; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink2)">{{ h.tagLine }}</span>
+                          <span style="height:28px; padding:0 11px; border-radius:14px; background:var(--card2); display:flex; align-items:center; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink2)">{{ h.pts }} progress</span>
+                          <span style="height:28px; padding:0 11px; border-radius:14px; background:var(--card2); display:flex; align-items:center; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink2)">{{ h.creditsText }}</span>
+                          <sc-if value="{{ h.linked }}"><span style="height:28px; padding:0 11px; border-radius:14px; background:var(--card2); display:flex; align-items:center; gap:6px; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--accentInk)">→ {{ h.goalName }}</span></sc-if>
+                        </div>
+                        <sc-if value="{{ h.hasSubs }}">
+                          <div style="display:flex; flex-direction:column; gap:8px">
+                            <sc-for list="{{ h.subs }}" as="t">
+                              <button onClick="{{ t.onTap }}" style="display:flex; align-items:center; gap:12px; border:none; background:transparent; padding:0; cursor:pointer; text-align:left; color:var(--ink)">
+                                <span style="width:30px; height:30px; border-radius:9px; background:{{ t.bg }}; color:var(--onInv); display:flex; align-items:center; justify-content:center; flex:none">
+                                  <sc-if value="{{ t.d }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2L18.5 7.8"></path></svg></sc-if>
+                                </span>
+                                <span style="font-size:15px; color:{{ t.ink }}; text-decoration:{{ t.deco }}">{{ t.t }}</span>
+                              </button>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ h.isAuto }}">
+                          <span style="display:flex; align-items:center; gap:8px; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink2)"><span style="width:6px; height:6px; border-radius:50%; background:var(--accent)"></span>Syncing from Apple Health · {{ h.metric }}</span>
+                        </sc-if>
+                        <div style="display:flex; gap:8px">
+                          <sc-if value="{{ h.canLog }}">
+                            <button onClick="{{ h.onLog }}" style="height:46px; padding:0 18px; border-radius:23px; border:1px solid var(--line2); background:transparent; color:var(--ink); font-size:15px; font-weight:500; cursor:pointer">{{ h.logLabel }}</button>
+                          </sc-if>
+                          <button onClick="{{ h.onTap }}" style="flex:1; height:46px; border-radius:23px; border:none; background:var(--inv); color:var(--onInv); font-size:15px; font-weight:600; cursor:pointer">{{ h.doneLabel }}</button>
+                        </div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+            <button onClick="{{ openCreateHabit }}" style="display:flex; align-items:center; gap:14px; padding:8px 0; border:none; background:transparent; cursor:pointer; color:var(--ink); text-align:left">
+              <span style="width:50px; height:50px; border-radius:50%; background:var(--card2); display:flex; align-items:center; justify-content:center; flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>
+              <span style="font-size:17px; font-weight:500">Add habit</span>
+            </button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ pushIs.goal }}">
+        <div style="position:absolute; inset:0; z-index:8; background:var(--bg); overflow-y:auto; padding:62px 20px 128px; box-sizing:border-box; scrollbar-width:none">
+          <div style="display:flex; flex-direction:column; gap:18px">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <button onClick="{{ pop }}" style="width:46px; height:46px; border-radius:50%; border:none; background:var(--card2); color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"></path></svg></button>
+              <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">{{ goalCur.kind }} · {{ goalCur.source }}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px">
+              <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Goal {{ goalCur.idx }} · {{ goalCur.dayText }}</span>
+              <span style="font-size:32px; font-weight:600; letter-spacing:-0.03em; line-height:1.05; text-wrap:pretty">{{ goalCur.title }}</span>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding-top:6px">
+              <span style="font-size:68px; font-weight:500; letter-spacing:-0.055em; line-height:0.9">{{ goalCur.value }}</span>
+              <span style="font-size:16px; color:var(--ink3)">{{ goalCur.unitText }} {{ goalCur.ofText }}</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(44,1fr); gap:3px; height:30px">
+              <sc-for list="{{ goalCur.ticksLg }}" as="t"><span style="background:{{ t.bg }}; border-radius:1px; transition:background .4s"></span></sc-for>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.04em; text-transform:uppercase"><span>{{ goalCur.pctText }} complete</span><span style="color:var(--ink3)">{{ goalCur.etaShort }}</span></div>
+            <p style="margin:0; font-size:16px; color:var(--ink2)">{{ goalCur.etaText }}.</p>
+
+            <div style="padding:18px 16px 14px; border-radius:28px; border:1px solid var(--line); background:var(--cardGrad); box-shadow:var(--hi); display:flex; flex-direction:column; gap:10px">
+              <div style="display:flex; justify-content:space-between; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:0 4px"><span>Last 8 weeks</span><span style="white-space:nowrap">{{ goalCur.paceText }} / wk</span></div>
+              <svg width="100%" height="120" viewBox="0 0 318 120" preserveAspectRatio="none" style="display:block"><path d="{{ goalCur.sparkArea }}" fill="var(--ink)" opacity="0.06"></path><polyline points="{{ goalCur.sparkLine }}" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline><circle cx="{{ goalCur.sparkX }}" cy="{{ goalCur.sparkY }}" r="4.5" fill="var(--accent)"></circle></svg>
+              <div style="display:flex; justify-content:space-between; padding:0 4px; font-family:'Martian Mono',ui-monospace,monospace; font-size:9px; color:var(--ink3)">
+                <sc-for list="{{ goalCur.weekLabels }}" as="w"><span>{{ w.label }}</span></sc-for>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border:1px solid var(--line2); border-radius:4px">
+              <div style="padding:10px; display:flex; flex-direction:column; gap:8px; min-width:0"><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Start</span><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:12px; overflow:hidden; text-overflow:ellipsis">{{ goalCur.startText }}</span></div>
+              <div style="padding:10px; border-left:1px solid var(--line2); display:flex; flex-direction:column; gap:8px; min-width:0"><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Now</span><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:12px; color:var(--accentInk); overflow:hidden; text-overflow:ellipsis">{{ goalCur.nowText }}</span></div>
+              <div style="padding:10px; border-left:1px solid var(--line2); display:flex; flex-direction:column; gap:8px; min-width:0"><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Target</span><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:12px; overflow:hidden; text-overflow:ellipsis">{{ goalCur.targetText }}</span></div>
+              <div style="padding:10px; border-left:1px solid var(--line2); display:flex; flex-direction:column; gap:8px; min-width:0"><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Pace/wk</span><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:12px; overflow:hidden; text-overflow:ellipsis">{{ goalCur.paceText }}</span></div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px">
+              <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Milestones</span>
+              <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px">
+                <sc-for list="{{ goalCur.milestones }}" as="m" hint-placeholder-count="4">
+                  <span style="height:40px; border-radius:20px; box-sizing:border-box; border:1px solid {{ m.border }}; background:{{ m.bg }}; color:{{ m.ink }}; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:500">{{ m.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:2px">
+              <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding-bottom:6px">Habits that move this</span>
+              <sc-for list="{{ goalCur.linkedItems }}" as="h">
+                <div style="display:flex; align-items:center; gap:14px; padding:8px 0">
+                  <button onClick="{{ h.onTap }}" style="width:50px; height:50px; border-radius:50%; position:relative; border:none; background:var(--card2); padding:0; cursor:pointer; color:var(--ink); flex:none; display:flex; align-items:center; justify-content:center">
+                    <sc-if value="{{ h.notDone }}">
+                      <svg width="50" height="50" viewBox="0 0 48 48" style="position:absolute; inset:0; transform:rotate(-90deg)"><circle cx="24" cy="24" r="21" fill="none" stroke="var(--line2)" stroke-width="2"></circle><circle cx="24" cy="24" r="21" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-dasharray="131.95" stroke-dashoffset="{{ h.off21 }}"></circle></svg>
+                      <svg width="12" height="12" viewBox="0 0 12 12" style="position:relative"><path d="{{ h.glyph }}" fill="currentColor"></path></svg>
+                    </sc-if>
+                    <sc-if value="{{ h.isDone }}">
+                      <span style="position:absolute; inset:0; border-radius:50%; background:var(--inv); color:var(--onInv); display:flex; align-items:center; justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2L18.5 7.8"></path></svg></span>
+                    </sc-if>
+                  </button>
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px">
+                    <span style="font-size:17px; font-weight:500; color:{{ h.titleInk }}; text-decoration:{{ h.deco }}">{{ h.title }}</span>
+                    <span style="font-size:14px; color:var(--ink2)">{{ h.tagLine }}</span>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ goalCur.noLinked }}">
+                <p style="margin:0; font-size:15px; color:var(--ink2)">No habits linked yet. Link one when you create it.</p>
+              </sc-if>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px; padding-top:4px">
+              <button onClick="{{ goalCur.onContribute }}" style="height:56px; border-radius:28px; border:none; background:var(--inv); color:var(--onInv); font-size:16px; font-weight:600; cursor:pointer">{{ goalCur.contributeLabel }}</button>
+              <sc-if value="{{ goalCur.isAuto }}">
+                <span style="text-align:center; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink3)">Synced from Apple Health · 2 min ago</span>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ pushIs.settings }}">
+        <div style="position:absolute; inset:0; z-index:8; background:var(--bg); overflow-y:auto; padding:62px 20px 128px; box-sizing:border-box; scrollbar-width:none">
+          <div style="display:flex; flex-direction:column; gap:12px">
+            <div style="display:flex; align-items:center; gap:14px">
+              <button onClick="{{ pop }}" style="width:46px; height:46px; border-radius:50%; border:none; background:var(--card2); color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"></path></svg></button>
+            </div>
+            <span style="font-size:38px; font-weight:600; letter-spacing:-0.035em; line-height:1; padding:6px 0 10px">Settings</span>
+
+            <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:0 4px">Appearance</span>
+            <div style="border-radius:24px; border:1px solid var(--line); background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:18px">
+              <div style="display:flex; padding:3px; border-radius:20px; background:var(--card2)">
+                <sc-for list="{{ modeOpts }}" as="o" hint-placeholder-count="3">
+                  <button onClick="{{ o.onTap }}" style="flex:1; height:36px; border-radius:17px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; box-shadow:{{ o.sh }}; font-size:14px; font-weight:500; cursor:pointer">{{ o.label }}</button>
+                </sc-for>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:12px">
+                <span style="font-size:16px">App icon</span>
+                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px">
+                  <sc-for list="{{ iconOpts }}" as="o" hint-placeholder-count="4">
+                    <button onClick="{{ o.onTap }}" style="display:flex; flex-direction:column; align-items:center; gap:8px; border:none; background:transparent; cursor:pointer; padding:0; color:var(--ink2)">
+                      <span style="width:62px; height:62px; border-radius:16px; background:{{ o.bg }}; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px var(--card), 0 0 0 3.5px {{ o.ring }}; border:1px solid var(--line)">
+                        <svg width="36" height="36" viewBox="0 0 64 64" fill="none"><path d="M13 52V38M27 52V25M41 12V49H54" fill="none" stroke="{{ o.fg }}" stroke-width="6"></path></svg>
+                      </span>
+                      <span style="font-size:12px">{{ o.label }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+
+            <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:14px 4px 0">Momentum</span>
+            <p style="margin:0 4px; font-size:14px; line-height:1.4; color:var(--ink2)">Missed required habits drain momentum. If it reaches zero, SIL recalibrates: momentum restarts at 40 and the costs below apply.</p>
+            <div style="border-radius:24px; border:1px solid var(--line); background:var(--card); padding:0 18px; overflow:hidden">
+              <div style="margin-top:-1px">
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)"><span style="flex:1; font-size:16px">Drop one level</span><button onClick="{{ tg.penLevel.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.penLevel.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.penLevel.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)"><span style="flex:1; font-size:16px">Ease attributes back 2%</span><button onClick="{{ tg.penAttr.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.penAttr.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.penAttr.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)"><span style="flex:1; font-size:16px">Give up 20% of credits</span><button onClick="{{ tg.penCredits.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.penCredits.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.penCredits.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+                <button onClick="{{ previewReset }}" style="display:flex; align-items:center; gap:12px; min-height:58px; width:100%; border:none; border-top:1px solid var(--line); background:transparent; padding:0; color:var(--ink); cursor:pointer; text-align:left"><span style="flex:1; font-size:16px">Preview a recalibration</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"></path></svg></button>
+              </div>
+            </div>
+
+            <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:14px 4px 0">Reminders</span>
+            <div style="border-radius:24px; border:1px solid var(--line); background:var(--card); padding:0 18px; overflow:hidden">
+              <div style="margin-top:-1px">
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)"><span style="flex:1; font-size:16px">Habit reminders</span><button onClick="{{ tg.reminders.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.reminders.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.reminders.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)">
+                  <span style="flex:1; font-size:16px">Completion alerts</span>
+                  <div style="display:flex; padding:3px; border-radius:17px; background:var(--card2)">
+                    <sc-for list="{{ alertOpts }}" as="o" hint-placeholder-count="2"><button onClick="{{ o.onTap }}" style="height:28px; padding:0 12px; border-radius:14px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; box-shadow:{{ o.sh }}; font-size:13px; font-weight:500; cursor:pointer">{{ o.label }}</button></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; min-height:66px; border-top:1px solid var(--line)"><span style="flex:1; display:flex; flex-direction:column; gap:2px"><span style="font-size:16px">Smart timing</span><span style="font-size:13px; color:var(--ink2)">Learns when you usually check in</span></span><button onClick="{{ tg.smart.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.smart.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.smart.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+              </div>
+            </div>
+
+            <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:14px 4px 0">Connections</span>
+            <div style="border-radius:24px; border:1px solid var(--line); background:var(--card); padding:0 18px; overflow:hidden">
+              <div style="margin-top:-1px">
+                <div style="display:flex; align-items:center; gap:12px; min-height:66px; border-top:1px solid var(--line)"><span style="flex:1; display:flex; flex-direction:column; gap:2px"><span style="font-size:16px">Apple Health</span><span style="font-size:13px; color:var(--ink2)">Steps, sleep, water, workouts, weight</span></span><button onClick="{{ tg.health.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.health.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.health.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+                <div style="display:flex; align-items:center; gap:12px; min-height:66px; border-top:1px solid var(--line)"><span style="flex:1; display:flex; flex-direction:column; gap:2px"><span style="font-size:16px">Location</span><span style="font-size:13px; color:var(--ink2)">Check in at the gym or library</span></span><button onClick="{{ tg.location.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.location.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.location.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)"><span style="flex:1; font-size:16px">iCloud sync</span><button onClick="{{ tg.icloud.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.icloud.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.icloud.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)"><span style="flex:1; font-size:16px">Apple Watch</span><button onClick="{{ tg.watch.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.watch.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.watch.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+              </div>
+            </div>
+
+            <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:14px 4px 0">General</span>
+            <div style="border-radius:24px; border:1px solid var(--line); background:var(--card); padding:0 18px; overflow:hidden">
+              <div style="margin-top:-1px">
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)"><span style="flex:1; font-size:16px">Haptics</span><button onClick="{{ tg.haptics.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ tg.haptics.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ tg.haptics.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)"><span style="flex:1; font-size:16px">Open on</span><span style="font-size:15px; color:var(--ink2)">Today</span></div>
+                <div style="display:flex; align-items:center; gap:12px; min-height:58px; border-top:1px solid var(--line)"><span style="flex:1; font-size:16px">Language</span><span style="font-size:15px; color:var(--ink2)">English</span></div>
+                <button onClick="{{ openWidgets }}" style="display:flex; align-items:center; gap:12px; min-height:58px; width:100%; border:none; border-top:1px solid var(--line); background:transparent; padding:0; color:var(--ink); cursor:pointer; text-align:left"><span style="flex:1; font-size:16px">Widgets</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"></path></svg></button>
+                <button onClick="{{ replayOnboarding }}" style="display:flex; align-items:center; gap:12px; min-height:58px; width:100%; border:none; border-top:1px solid var(--line); background:transparent; padding:0; color:var(--ink); cursor:pointer; text-align:left"><span style="flex:1; font-size:16px">Replay onboarding</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"></path></svg></button>
+                <button onClick="{{ previewLevel }}" style="display:flex; align-items:center; gap:12px; min-height:58px; width:100%; border:none; border-top:1px solid var(--line); background:transparent; padding:0; color:var(--ink); cursor:pointer; text-align:left"><span style="flex:1; font-size:16px">Preview a level-up</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"></path></svg></button>
+              </div>
+            </div>
+            <span style="text-align:center; padding:18px 0 0; font-family:'Martian Mono',ui-monospace,monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">SIL 2.0 · Systematically Improving Lifestyle</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ pushIs.widgets }}">
+        <div style="position:absolute; inset:0; z-index:9; background:var(--bg); overflow-y:auto; padding:62px 20px 128px; box-sizing:border-box; scrollbar-width:none">
+          <div style="display:flex; flex-direction:column; gap:14px">
+            <button onClick="{{ pop }}" style="width:46px; height:46px; border-radius:50%; border:none; background:var(--card2); color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"></path></svg></button>
+            <div style="display:flex; flex-direction:column; gap:6px; padding:6px 0 4px">
+              <span style="font-size:38px; font-weight:600; letter-spacing:-0.035em; line-height:1">Widgets</span>
+              <span style="font-size:15px; color:var(--ink2)">Long-press your wallpaper to add one.</span>
+            </div>
+            <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:6px 4px 0">Home Screen</span>
+            <div style="border-radius:32px; padding:18px; background:radial-gradient(120% 70% at 20% 0%, var(--glow) 0%, transparent 60%), var(--bg2); border:1px solid var(--line); display:grid; grid-template-columns:1fr 1fr; gap:14px">
+              <div style="aspect-ratio:1; border-radius:24px; background:var(--card); border:1px solid var(--line); padding:14px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between">
+                <div style="position:relative; width:58px; height:58px">
+                  <svg width="58" height="58" viewBox="0 0 76 76" style="position:absolute; inset:0; transform:rotate(-90deg)"><circle cx="38" cy="38" r="32" fill="none" stroke="var(--line2)" stroke-width="3.5"></circle><circle cx="38" cy="38" r="32" fill="none" stroke="var(--ink)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="201.06" stroke-dashoffset="{{ momentumOff }}"></circle></svg>
+                  <span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:500">{{ player.momentum }}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px"><span style="font-size:15px; font-weight:500">Momentum</span><span style="font-size:12px; color:var(--ink2)">{{ player.streak }}-day streak</span></div>
+              </div>
+              <div style="aspect-ratio:1; border-radius:24px; background:var(--card); border:1px solid var(--line); padding:14px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between">
+                <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Goal 01</span>
+                <span style="font-size:40px; font-weight:500; letter-spacing:-0.05em; line-height:1">{{ goalTop.pctText }}</span>
+                <div style="display:flex; flex-direction:column; gap:8px">
+                  <div style="display:grid; grid-template-columns:repeat(36,1fr); gap:1.5px; height:8px"><sc-for list="{{ goalTop.ticks }}" as="t"><span style="background:{{ t.bg }}"></span></sc-for></div>
+                  <span style="font-size:12px; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ goalTop.title }}</span>
+                </div>
+              </div>
+              <div style="grid-column:span 2; border-radius:24px; background:var(--card); border:1px solid var(--line); padding:16px 18px; display:flex; gap:16px">
+                <div style="display:flex; flex-direction:column; justify-content:space-between; width:84px; flex:none">
+                  <span style="font-size:44px; font-weight:500; letter-spacing:-0.05em; line-height:1">{{ leftCount }}</span>
+                  <span style="font-size:12px; color:var(--ink2); line-height:1.3">left today · level {{ player.level }}</span>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:10px; min-width:0">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Next up</span>
+                  <sc-for list="{{ widgetNext }}" as="h" hint-placeholder-count="3">
+                    <div style="display:flex; align-items:center; gap:10px; min-width:0">
+                      <span style="width:16px; height:16px; border-radius:50%; border:1.5px solid var(--line2); flex:none"></span>
+                      <span style="font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ h.title }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="grid-column:span 2; border-radius:24px; background:var(--card); border:1px solid var(--line); padding:18px; display:flex; flex-direction:column; gap:16px">
+                <div style="display:flex; justify-content:space-between; align-items:baseline"><span style="font-size:17px">{{ year }}</span><span style="font-size:15px; color:var(--ink3)">{{ yearPct }}% complete</span></div>
+                <div style="display:grid; grid-template-columns:repeat(13,1fr); gap:10px 0; justify-items:center">
+                  <sc-for list="{{ sparkles }}" as="w" hint-placeholder-count="52"><svg width="9" height="9" viewBox="0 0 12 12"><path d="M6 0C6.5 4.3 7.7 5.5 12 6C7.7 6.5 6.5 7.7 6 12C5.5 7.7 4.3 6.5 0 6C4.3 5.5 5.5 4.3 6 0Z" fill="{{ w.fill }}"></path></svg></sc-for>
+                </div>
+              </div>
+            </div>
+            <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:14px 4px 0">Lock Screen</span>
+            <div style="border-radius:32px; padding:26px 22px 24px; background:radial-gradient(90% 60% at 50% 100%, var(--glow) 0%, transparent 70%), #050506; color:#F4F4F5; display:flex; flex-direction:column; align-items:center; gap:14px; border:1px solid rgba(255,255,255,0.06)">
+              <span style="font-size:15px; font-weight:500; color:rgba(255,255,255,0.75)">{{ dateLong }} · SIL {{ leftCount }} left</span>
+              <span style="font-size:88px; font-weight:600; letter-spacing:-0.04em; line-height:0.9">{{ lockTime }}</span>
+              <div style="display:flex; gap:12px; align-items:center; padding-top:8px">
+                <div style="position:relative; width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.1)">
+                  <svg width="56" height="56" viewBox="0 0 56 56" style="position:absolute; inset:0; transform:rotate(-90deg)"><circle cx="28" cy="28" r="22" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3.5"></circle><circle cx="28" cy="28" r="22" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="138.23" stroke-dashoffset="{{ lockOff }}"></circle></svg>
+                  <span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:600">{{ player.momentum }}</span>
+                </div>
+                <div style="width:150px; height:56px; border-radius:16px; background:rgba(255,255,255,0.1); padding:8px 12px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; gap:2px">
+                  <span style="font-size:14px; font-weight:600">{{ coachA }}</span>
+                  <span style="font-size:12px; color:rgba(255,255,255,0.72); white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ nextTitle }} · {{ nextTime }}</span>
+                </div>
+                <div style="width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.1); display:flex; flex-direction:column; align-items:center; justify-content:center">
+                  <span style="font-size:8px; font-family:'Martian Mono',ui-monospace,monospace; letter-spacing:0.06em; color:rgba(255,255,255,0.72)">LVL</span>
+                  <span style="font-size:18px; font-weight:600; line-height:1">{{ player.level }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute; left:14px; right:14px; bottom:26px; display:flex; gap:10px; z-index:12">
+        <div style="flex:1; height:64px; border-radius:32px; background:var(--glass); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid var(--line); display:flex; align-items:center; padding:6px; gap:2px; box-sizing:border-box; box-shadow:var(--shadow)">
+          <button onClick="{{ tabs.today.onTap }}" style="flex:{{ tabs.today.flex }}; height:52px; border-radius:26px; border:none; background:{{ tabs.today.bg }}; color:{{ tabs.today.ink }}; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; padding:0 10px; transition:flex .25s, background .2s">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4.5 4.5h5.5v5.5H4.5zM14 4.5h5.5v5.5H14zM4.5 14h5.5v5.5H4.5zM14 14h5.5v5.5H14z"></path></svg>
+            <sc-if value="{{ tabs.today.on }}" hint-placeholder-val="{{ true }}"><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; font-weight:500">Today</span></sc-if>
+          </button>
+          <button onClick="{{ tabs.goals.onTap }}" style="flex:{{ tabs.goals.flex }}; height:52px; border-radius:26px; border:none; background:{{ tabs.goals.bg }}; color:{{ tabs.goals.ink }}; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; padding:0 10px; transition:flex .25s, background .2s">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M7.5 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0M12 11.6v.8"></path></svg>
+            <sc-if value="{{ tabs.goals.on }}"><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; font-weight:500">Goals</span></sc-if>
+          </button>
+          <button onClick="{{ tabs.focus.onTap }}" style="flex:{{ tabs.focus.flex }}; height:52px; border-radius:26px; border:none; background:{{ tabs.focus.bg }}; color:{{ tabs.focus.ink }}; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; padding:0 10px; transition:flex .25s, background .2s">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 13.5a7.5 7.5 0 1 0 15 0a7.5 7.5 0 1 0 -15 0M12 9.5v4l2.5 1.6M9.5 2.8h5"></path></svg>
+            <sc-if value="{{ tabs.focus.on }}"><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; font-weight:500">Focus</span></sc-if>
+          </button>
+          <button onClick="{{ tabs.you.onTap }}" style="flex:{{ tabs.you.flex }}; height:52px; border-radius:26px; border:none; background:{{ tabs.you.bg }}; color:{{ tabs.you.ink }}; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; padding:0 10px; transition:flex .25s, background .2s">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 8a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M4.5 20.5c1.3-3.6 4.1-5.5 7.5-5.5s6.2 1.9 7.5 5.5"></path></svg>
+            <sc-if value="{{ tabs.you.on }}"><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; font-weight:500">You</span></sc-if>
+          </button>
+        </div>
+        <button onClick="{{ openCreate }}" style="width:64px; height:64px; flex:none; border-radius:50%; border:none; background:var(--inv); color:var(--onInv); display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:var(--shadow); padding:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+      </div>
+
+      <sc-if value="{{ sheetOpen }}">
+        <div onClick="{{ closeSheet }}" style="position:absolute; inset:0; z-index:30; background:var(--scrim); opacity:{{ scrimOp }}; transition:opacity .3s"></div>
+        <div style="position:absolute; left:0; right:0; bottom:0; top:56px; z-index:31; background:var(--bg2); border-radius:34px 34px 0 0; border-top:1px solid var(--line); transform:translateY({{ sheetY }}); transition:transform .34s cubic-bezier(.2,.8,.2,1); display:flex; flex-direction:column; box-shadow:var(--shadow)">
+          <div style="width:40px; height:5px; border-radius:3px; background:var(--line2); margin:10px auto 0; flex:none"></div>
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px 4px; flex:none">
+            <button onClick="{{ closeSheet }}" style="width:64px; height:44px; border:none; background:transparent; color:var(--ink2); font-size:16px; cursor:pointer; padding:0; text-align:left">Cancel</button>
+            <div style="display:flex; padding:3px; border-radius:20px; background:var(--card2)">
+              <sc-for list="{{ kindOpts }}" as="o" hint-placeholder-count="2"><button onClick="{{ o.onTap }}" style="height:34px; padding:0 18px; border-radius:17px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; box-shadow:{{ o.sh }}; font-size:14px; font-weight:500; cursor:pointer">{{ o.label }}</button></sc-for>
+            </div>
+            <span style="width:64px"></span>
+          </div>
+          <div style="flex:1; overflow-y:auto; padding:14px 20px 20px; display:flex; flex-direction:column; gap:20px; scrollbar-width:none">
+            <input value="{{ form.title }}" onChange="{{ onFormTitle }}" placeholder="Name it" style="border:none; background:transparent; outline:none; font-size:30px; font-weight:600; letter-spacing:-0.03em; color:var(--ink); padding:4px 0; width:100%">
+            <sc-if value="{{ isHabitForm }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-direction:column; gap:20px">
+                <div style="display:flex; gap:8px; overflow-x:auto; margin:0 -20px; padding:0 20px; scrollbar-width:none">
+                  <sc-for list="{{ starterOpts }}" as="o" hint-placeholder-count="6"><button onClick="{{ o.onTap }}" style="height:38px; padding:0 16px; border-radius:19px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; font-size:14px; font-weight:500; cursor:pointer; flex:none">{{ o.label }}</button></sc-for>
+                </div>
+                <div style="display:flex; padding:3px; border-radius:20px; background:var(--card2)">
+                  <sc-for list="{{ modeFormOpts }}" as="o" hint-placeholder-count="2"><button onClick="{{ o.onTap }}" style="flex:1; height:36px; border-radius:17px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; box-shadow:{{ o.sh }}; font-size:14px; font-weight:500; cursor:pointer">{{ o.label }}</button></sc-for>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Builds</span>
+                  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px">
+                    <sc-for list="{{ formAttrOpts }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.onTap }}" style="height:44px; border-radius:22px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; display:flex; align-items:center; justify-content:center; gap:7px; font-size:14px; font-weight:500; cursor:pointer; padding:0"><svg width="10" height="10" viewBox="0 0 12 12"><path d="{{ o.glyph }}" fill="currentColor"></path></svg>{{ o.name }}</button></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Effort</span>
+                  <div style="display:flex; padding:3px; border-radius:22px; background:var(--card2)">
+                    <sc-for list="{{ effortOpts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.onTap }}" style="flex:1; height:46px; border-radius:19px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; box-shadow:{{ o.sh }}; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px"><span style="font-size:14px; font-weight:500">{{ o.label }}</span><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9px; opacity:0.7">{{ o.sub }}</span></button></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Days</span>
+                  <div style="display:flex; justify-content:space-between">
+                    <sc-for list="{{ dayOpts }}" as="o" hint-placeholder-count="7"><button onClick="{{ o.onTap }}" style="width:44px; height:44px; border-radius:50%; border:none; background:{{ o.bg }}; color:{{ o.ink }}; font-size:15px; font-weight:500; cursor:pointer; padding:0">{{ o.label }}</button></sc-for>
+                  </div>
+                </div>
+                <div style="border-radius:22px; background:var(--card); border:1px solid var(--line); padding:0 16px">
+                  <div style="display:flex; align-items:center; min-height:58px; gap:12px"><span style="flex:1; font-size:16px">Remind me</span><button onClick="{{ ftg.reminder.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ ftg.reminder.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ ftg.reminder.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button></div>
+                  <sc-if value="{{ hasReminder }}">
+                    <div style="display:flex; gap:8px; padding:0 0 14px">
+                      <sc-for list="{{ timeOpts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.onTap }}" style="flex:1; height:38px; border-radius:19px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; font-family:'Martian Mono',ui-monospace,monospace; font-size:12px; cursor:pointer">{{ o.label }}</button></sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ isCustom }}">
+                  <div style="display:flex; flex-direction:column; gap:20px">
+                    <div style="display:flex; flex-direction:column; gap:10px">
+                      <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Tracking</span>
+                      <div style="display:flex; flex-wrap:wrap; gap:6px"><sc-for list="{{ trackOpts }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.onTap }}" style="height:38px; padding:0 16px; border-radius:19px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; font-size:14px; font-weight:500; cursor:pointer">{{ o.label }}</button></sc-for></div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:10px">
+                      <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Moves a goal</span>
+                      <div style="display:flex; flex-wrap:wrap; gap:6px"><sc-for list="{{ linkOpts }}" as="o" hint-placeholder-count="5"><button onClick="{{ o.onTap }}" style="height:38px; padding:0 16px; border-radius:19px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; font-size:14px; font-weight:500; cursor:pointer">{{ o.label }}</button></sc-for></div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px; border-radius:22px; background:var(--card); border:1px solid var(--line); padding:14px 16px">
+                      <span style="flex:1; display:flex; flex-direction:column; gap:3px"><span style="font-size:16px">Optional</span><span style="font-size:13px; line-height:1.35; color:var(--ink2)">Counts toward your level. No credits, and missing it never costs momentum.</span></span>
+                      <button onClick="{{ ftg.optional.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ ftg.optional.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ ftg.optional.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isGoalForm }}">
+              <div style="display:flex; flex-direction:column; gap:20px">
+                <div style="display:flex; flex-direction:column; gap:10px">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Type</span>
+                  <div style="display:flex; flex-wrap:wrap; gap:6px"><sc-for list="{{ goalTypeOpts }}" as="o" hint-placeholder-count="6"><button onClick="{{ o.onTap }}" style="height:38px; padding:0 16px; border-radius:19px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; font-size:14px; font-weight:500; cursor:pointer">{{ o.label }}</button></sc-for></div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Target</span>
+                  <input value="{{ form.goalTarget }}" onChange="{{ onGoalTarget }}" inputmode="decimal" placeholder="20,000" style="height:64px; border-radius:22px; border:1px solid var(--line); background:var(--card); padding:0 20px; font-size:28px; font-weight:500; letter-spacing:-0.03em; color:var(--ink); outline:none; box-sizing:border-box; width:100%">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px">
+                  <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Timeframe</span>
+                  <div style="display:flex; gap:6px"><sc-for list="{{ deadlineOpts }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.onTap }}" style="flex:1; height:44px; border-radius:22px; border:none; background:{{ o.bg }}; color:{{ o.ink }}; font-size:14px; font-weight:500; cursor:pointer">{{ o.label }}</button></sc-for></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; border-radius:22px; background:var(--card); border:1px solid var(--line); padding:14px 16px">
+                  <span style="flex:1; display:flex; flex-direction:column; gap:3px"><span style="font-size:16px">Track from Apple Health</span><span style="font-size:13px; color:var(--ink2)">Weight, steps, sleep and workouts update on their own.</span></span>
+                  <button onClick="{{ ftg.goalAuto.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ ftg.goalAuto.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ ftg.goalAuto.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="flex:none; padding:14px 20px 34px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:12px">
+            <span style="text-align:center; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink3)">{{ formPreview }}</span>
+            <button onClick="{{ saveForm }}" style="height:56px; border-radius:28px; border:none; background:var(--accent); color:var(--onAccent); font-size:17px; font-weight:600; cursor:pointer; opacity:{{ saveOp }}">{{ saveLabel }}</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ovComplete }}">
+        <div onClick="{{ continueOverlay }}" style="position:absolute; inset:0; z-index:34; background:var(--scrim); opacity:{{ ovOp }}; transition:opacity .25s"></div>
+        <div style="position:absolute; left:12px; right:12px; bottom:22px; z-index:35; border-radius:38px; background:var(--bg2); border:1px solid var(--line); box-shadow:var(--shadow); padding:30px 22px 18px; display:flex; flex-direction:column; align-items:center; gap:18px; opacity:{{ ovOp }}; transform:{{ ovY }}; transition:opacity .3s, transform .36s cubic-bezier(.2,.8,.2,1)">
+          <div style="position:relative; width:92px; height:92px">
+            {{ burst }}
+            <span style="position:absolute; inset:0; border-radius:50%; background:var(--inv); color:var(--onInv); display:flex; align-items:center; justify-content:center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2L18.5 7.8"></path></svg></span>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center">
+            <span style="font-size:36px; font-weight:600; letter-spacing:-0.035em; line-height:1">{{ last.head }}</span>
+            <span style="font-size:17px; color:var(--ink2)">{{ last.title }}</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%; border:1px solid var(--line2); border-radius:4px">
+            <div style="padding:12px 10px; display:flex; flex-direction:column; gap:6px"><span style="font-size:22px; font-weight:500; letter-spacing:-0.03em">{{ last.ptsText }}</span><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Progress</span></div>
+            <div style="padding:12px 10px; border-left:1px solid var(--line2); display:flex; flex-direction:column; gap:6px"><span style="font-size:22px; font-weight:500; letter-spacing:-0.03em">{{ last.crText }}</span><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Credits</span></div>
+            <div style="padding:12px 10px; border-left:1px solid var(--line2); display:flex; flex-direction:column; gap:6px"><span style="font-size:22px; font-weight:500; letter-spacing:-0.03em; color:var(--accentInk)">{{ last.gainText }}</span><span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">{{ last.attrName }}</span></div>
+          </div>
+          <sc-if value="{{ last.hasGoal }}">
+            <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--accentInk)">→ {{ last.goalNote }}</span>
+          </sc-if>
+          <p style="margin:0; font-size:15px; line-height:1.4; color:var(--ink2); text-align:center; text-wrap:pretty">{{ last.note }}</p>
+          <div style="display:flex; gap:10px; width:100%">
+            <button onClick="{{ undoLast }}" style="height:54px; padding:0 24px; border-radius:27px; border:1px solid var(--line2); background:transparent; color:var(--ink); font-size:16px; font-weight:500; cursor:pointer">Undo</button>
+            <button onClick="{{ continueOverlay }}" style="flex:1; height:54px; border-radius:27px; border:none; background:var(--inv); color:var(--onInv); font-size:16px; font-weight:600; cursor:pointer">{{ continueLabel }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ ovLevel }}">
+        <div style="position:absolute; inset:0; z-index:18; background:var(--bg); opacity:{{ ovOp }}; transition:opacity .4s; overflow:hidden">
+          <div style="position:absolute; top:0; left:0; right:0; height:260px; background:radial-gradient(80% 100% at 50% 0%, var(--glow) 0%, transparent 70%)"></div>
+          <div style="position:absolute; bottom:0; left:0; right:0; height:220px; background:radial-gradient(80% 100% at 50% 100%, var(--glow) 0%, transparent 70%)"></div>
+          <div style="position:absolute; top:104px; left:24px; right:24px; height:1px; background:linear-gradient(90deg, transparent, var(--accentInk), transparent); opacity:0.7"></div>
+          <div style="position:absolute; top:110px; left:24px; right:24px; height:1px; background:var(--line2)"></div>
+          <div style="position:relative; height:100%; display:flex; flex-direction:column; padding:70px 24px 40px; box-sizing:border-box">
+            <div style="display:flex; justify-content:space-between; font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase"><span>SIL · Level</span><span style="color:var(--ink3)">{{ clock }}</span></div>
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:22px; transform:{{ ovScale }}; transition:transform .6s cubic-bezier(.2,.8,.2,1)">
+              <div style="display:flex; align-items:flex-end; gap:16px">
+                <span style="font-size:84px; font-weight:400; letter-spacing:-0.06em; line-height:0.85; color:var(--ink3)">{{ lvFrom }}</span>
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px"><path d="M5 12h14M13.5 6.5L19 12l-5.5 5.5"></path></svg>
+                <span style="font-size:150px; font-weight:500; letter-spacing:-0.07em; line-height:0.8">{{ lvTo }}</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:8px">
+                <span style="font-size:36px; font-weight:600; letter-spacing:-0.035em; line-height:1.05">You've moved up.</span>
+                <span style="font-size:17px; color:var(--ink2)">{{ totalText }} habits got you here. Same rhythm from here.</span>
+              </div>
+              <div style="display:flex; flex-direction:column">
+                <sc-for list="{{ lvUnlocks }}" as="u" hint-placeholder-count="4">
+                  <div style="display:flex; align-items:baseline; gap:14px; padding:13px 0; border-top:1px solid var(--line)">
+                    <span style="width:72px; flex:none; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">{{ u.k }}</span>
+                    <span style="font-size:16px">{{ u.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <button onClick="{{ continueOverlay }}" style="height:56px; border-radius:28px; border:none; background:var(--inv); color:var(--onInv); font-size:17px; font-weight:600; cursor:pointer">Continue</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ ovReset }}">
+        <div onClick="{{ closeOverlay }}" style="position:absolute; inset:0; z-index:34; background:var(--scrim); opacity:{{ ovOp }}; transition:opacity .25s"></div>
+        <div style="position:absolute; left:12px; right:12px; bottom:22px; z-index:35; border-radius:38px; background:var(--bg2); border:1px solid var(--line); box-shadow:var(--shadow); padding:28px 22px 18px; display:flex; flex-direction:column; gap:18px; opacity:{{ ovOp }}; transform:{{ ovY }}; transition:opacity .3s, transform .36s cubic-bezier(.2,.8,.2,1)">
+          <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--accentInk)">Recalibration · preview</span>
+          <span style="font-size:32px; font-weight:600; letter-spacing:-0.035em; line-height:1.05">Momentum ran out. That's allowed.</span>
+          <p style="margin:0; font-size:15px; line-height:1.45; color:var(--ink2)">Three days of missed habits drained the meter. SIL resets it rather than wiping your history. Start again today.</p>
+          <div style="display:flex; flex-direction:column">
+            <div style="display:flex; align-items:baseline; gap:14px; padding:12px 0; border-top:1px solid var(--line)"><span style="width:92px; flex:none; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Momentum</span><span style="font-size:16px">{{ reset.momentum }}</span></div>
+            <div style="display:flex; align-items:baseline; gap:14px; padding:12px 0; border-top:1px solid var(--line)"><span style="width:92px; flex:none; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Level</span><span style="font-size:16px">{{ reset.level }}</span></div>
+            <div style="display:flex; align-items:baseline; gap:14px; padding:12px 0; border-top:1px solid var(--line)"><span style="width:92px; flex:none; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Credits</span><span style="font-size:16px">{{ reset.credits }}</span></div>
+            <div style="display:flex; align-items:baseline; gap:14px; padding:12px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line)"><span style="width:92px; flex:none; font-family:'Martian Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3)">Attributes</span><span style="font-size:16px">{{ reset.attrs }}</span></div>
+          </div>
+          <span style="font-size:13px; color:var(--ink3)">Change what a recalibration costs in Settings → Momentum.</span>
+          <button onClick="{{ closeOverlay }}" style="height:54px; border-radius:27px; border:none; background:var(--inv); color:var(--onInv); font-size:16px; font-weight:600; cursor:pointer">Start again today</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ onboarding }}">
+        <div style="position:absolute; inset:0; z-index:18; background:var(--bg); display:flex; flex-direction:column; padding:64px 24px 40px; box-sizing:border-box">
+          <div style="display:flex; align-items:center; gap:16px; flex:none">
+            <div style="flex:1; display:flex; gap:6px">
+              <sc-for list="{{ obBars }}" as="b" hint-placeholder-count="4"><span style="flex:1; height:2px; border-radius:1px; background:{{ b.bg }}; transition:background .3s"></span></sc-for>
+            </div>
+            <button onClick="{{ obSkip }}" style="height:36px; border:none; background:transparent; color:var(--ink2); font-size:15px; cursor:pointer; padding:0">Skip</button>
+          </div>
+          <div style="flex:1; overflow-y:auto; padding:28px 0 16px; scrollbar-width:none">
+            <sc-if value="{{ ob.s0 }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-direction:column; gap:22px; height:100%">
+                <svg width="96" height="96" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="15" fill="var(--card2)"></rect><path d="M13 52V38M27 52V25M41 12V49H54" fill="none" stroke="var(--ink)" stroke-width="6"></path></svg>
+                <div style="flex:1"></div>
+                <span style="font-family:'Martian Mono',ui-monospace,monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink3)">SIL · Systematically Improving Lifestyle</span>
+                <span style="font-size:46px; font-weight:600; letter-spacing:-0.04em; line-height:1.02; text-wrap:pretty">Small things, done daily, measured honestly.</span>
+                <span style="font-size:17px; line-height:1.4; color:var(--ink2)">Habits, goals and focus in one quiet system. The progress compounds, and you'll see it.</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ ob.s1 }}">
+              <div style="display:flex; flex-direction:column; gap:20px">
+                <span style="width:52px; height:38px; border-radius:19px; background:var(--inv); color:var(--onInv); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:600">{{ ob.num }}</span>
+                <span style="font-size:42px; font-weight:600; letter-spacing:-0.04em; line-height:1.02">What are you building?</span>
+                <span style="font-size:17px; line-height:1.4; color:var(--ink2)">Pick the areas you want to grow. You can change this later.</span>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; padding-top:6px">
+                  <sc-for list="{{ obAttrOpts }}" as="o" hint-placeholder-count="4">
+                    <button onClick="{{ o.onTap }}" style="height:150px; border-radius:26px; border:1px solid {{ o.border }}; background:{{ o.bg }}; color:{{ o.ink }}; padding:18px; display:flex; flex-direction:column; justify-content:space-between; text-align:left; cursor:pointer; transition:background .2s">
+                      <svg width="14" height="14" viewBox="0 0 12 12"><path d="{{ o.glyph }}" fill="currentColor"></path></svg>
+                      <span style="display:flex; flex-direction:column; gap:4px"><span style="font-size:20px; font-weight:600; letter-spacing:-0.02em">{{ o.name }}</span><span style="font-size:13px; line-height:1.3; color:{{ o.sub }}">{{ o.note }}</span></span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ ob.s2 }}">
+              <div style="display:flex; flex-direction:column; gap:20px">
+                <span style="width:52px; height:38px; border-radius:19px; background:var(--inv); color:var(--onInv); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:600">{{ ob.num }}</span>
+                <span style="font-size:42px; font-weight:600; letter-spacing:-0.04em; line-height:1.02">Start with three.</span>
+                <span style="font-size:17px; line-height:1.4; color:var(--ink2)">Three habits you keep beat ten you drop. Add more once these feel easy.</span>
+                <div style="display:flex; flex-direction:column">
+                  <sc-for list="{{ obHabitOpts }}" as="o" hint-placeholder-count="7">
+                    <button onClick="{{ o.onTap }}" style="display:flex; align-items:center; gap:14px; padding:9px 0; border:none; background:transparent; cursor:pointer; text-align:left; color:var(--ink)">
+                      <span style="width:46px; height:46px; border-radius:50%; background:{{ o.ring }}; color:{{ o.ink }}; display:flex; align-items:center; justify-content:center; flex:none; transition:background .2s">
+                        <sc-if value="{{ o.on }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4.2 4.2L18.5 7.8"></path></svg></sc-if>
+                        <sc-if value="{{ o.off }}"><svg width="11" height="11" viewBox="0 0 12 12"><path d="{{ o.glyph }}" fill="currentColor"></path></svg></sc-if>
+                      </span>
+                      <span style="flex:1; display:flex; flex-direction:column; gap:2px"><span style="font-size:17px; font-weight:500">{{ o.title }}</span><span style="font-size:14px; color:var(--ink2)">{{ o.note }}</span></span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ ob.s3 }}">
+              <div style="display:flex; flex-direction:column; gap:20px">
+                <span style="width:52px; height:38px; border-radius:19px; background:var(--inv); color:var(--onInv); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:600">{{ ob.num }}</span>
+                <span style="font-size:42px; font-weight:600; letter-spacing:-0.04em; line-height:1.02">Let it track itself.</span>
+                <span style="font-size:17px; line-height:1.4; color:var(--ink2)">The less you log by hand, the longer you'll stay with it. Your data stays on your devices.</span>
+                <div style="border-radius:26px; border:1px solid var(--line); background:var(--card); padding:0 18px; overflow:hidden">
+                  <div style="margin-top:-1px">
+                    <sc-for list="{{ obPermOpts }}" as="o" hint-placeholder-count="4">
+                      <div style="display:flex; align-items:center; gap:12px; padding:16px 0; border-top:1px solid var(--line)">
+                        <span style="flex:1; display:flex; flex-direction:column; gap:3px"><span style="font-size:16px; font-weight:500">{{ o.name }}</span><span style="font-size:13px; line-height:1.35; color:var(--ink2)">{{ o.note }}</span></span>
+                        <button onClick="{{ o.onTap }}" style="width:50px; height:30px; border-radius:15px; border:none; background:{{ o.bg }}; padding:3px; cursor:pointer; flex:none"><span style="display:block; width:24px; height:24px; border-radius:50%; background:#FFFFFF; transform:translateX({{ o.x }}); transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span></button>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display:flex; gap:10px; flex:none">
+            <sc-if value="{{ ob.notFirst }}">
+              <button onClick="{{ obBack }}" style="width:58px; height:58px; border-radius:50%; border:1px solid var(--line2); background:transparent; color:var(--ink); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M10.5 6.5L5 12l5.5 5.5"></path></svg></button>
+            </sc-if>
+            <button onClick="{{ obNext }}" style="flex:1; height:58px; border-radius:29px; border:none; background:var(--inv); color:var(--onInv); font-size:17px; font-weight:600; cursor:pointer">{{ obCta }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasToast }}">
+        <div style="position:absolute; top:60px; left:24px; right:24px; display:flex; justify-content:center; z-index:48; pointer-events:none">
+          <span style="background:var(--inv); color:var(--onInv); padding:11px 18px; border-radius:22px; font-size:14px; font-weight:500; text-align:center; box-shadow:var(--shadow)">{{ toast }}</span>
+        </div>
+      </sc-if>
+    </div>
+  </x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;violet&quot;,&quot;orange&quot;,&quot;mono&quot;],&quot;default&quot;:&quot;violet&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;appearance&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;demoTimer&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;},&quot;startOnOnboarding&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+class Component extends DCLogic {
+  T = {
+    dark: { bg:'#0A0A0C', bg2:'#111114', card:'#16161A', card2:'#222227', chip:'#2B2B31', line:'rgba(255,255,255,0.07)', line2:'rgba(255,255,255,0.14)', ink:'#F4F4F5', ink2:'#A6A6AE', ink3:'#84848D', dot:'rgba(255,255,255,0.13)', inv:'#F4F4F5', onInv:'#0A0A0C', glass:'rgba(26,26,30,0.74)', scrim:'rgba(0,0,0,0.62)', cardGrad:'linear-gradient(155deg,#1D1D22 0%,#141417 100%)', shadow:'0 30px 60px rgba(0,0,0,0.55)', hi:'inset 0 1px 0 rgba(255,255,255,0.05)' },
+    light: { bg:'#EDEDEB', bg2:'#F6F6F5', card:'#F8F8F7', card2:'#E1E1DF', chip:'#D9D9D7', line:'rgba(0,0,0,0.06)', line2:'rgba(0,0,0,0.13)', ink:'#0E0E10', ink2:'#52525A', ink3:'#66666E', dot:'rgba(0,0,0,0.12)', inv:'#0E0E10', onInv:'#FFFFFF', glass:'rgba(248,248,247,0.82)', scrim:'rgba(20,20,22,0.32)', cardGrad:'linear-gradient(155deg,#FDFDFC 0%,#F2F2F1 100%)', shadow:'0 24px 50px rgba(0,0,0,0.12)', hi:'inset 0 1px 0 rgba(255,255,255,0.9)' }
+  };
+  A = {
+    violet: { dark:{ accent:'#5B3CFF', accentInk:'#B0A3FF', onAccent:'#FFFFFF', glow:'rgba(91,60,255,0.38)' }, light:{ accent:'#4A2BEF', accentInk:'#3F22D4', onAccent:'#FFFFFF', glow:'rgba(74,43,239,0.16)' } },
+    orange: { dark:{ accent:'#FF6A2B', accentInk:'#FF9A6B', onAccent:'#0A0A0C', glow:'rgba(255,106,43,0.34)' }, light:{ accent:'#F2551A', accentInk:'#B83C0B', onAccent:'#0E0E10', glow:'rgba(242,85,26,0.16)' } },
+    mono: { dark:{ accent:'#F4F4F5', accentInk:'#F4F4F5', onAccent:'#0A0A0C', glow:'rgba(255,255,255,0.12)' }, light:{ accent:'#0E0E10', accentInk:'#0E0E10', onAccent:'#FFFFFF', glow:'rgba(0,0,0,0.07)' } }
+  };
+  ATTRS = [
+    { id:'body', name:'Body', glyph:'M2.5 2.5h7v7h-7z' },
+    { id:'mind', name:'Mind', glyph:'M1.5 6a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0' },
+    { id:'energy', name:'Energy', glyph:'M6 1.6L10.9 10.2H1.1z' },
+    { id:'spirit', name:'Spirit', glyph:'M6 0.9L11.1 6L6 11.1L0.9 6z' },
+  ];
+  W = ['Nothing','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve'];
+  SEED_ATTRS = { body:124, mind:188, energy:142, spirit:110 };
+  VARIANTS = [
+    { id:'bento', label:'Bento', code:'A' },
+    { id:'instrument', label:'Instrument', code:'B' },
+    { id:'editorial', label:'Editorial', code:'C' },
+    { id:'year', label:'Year', code:'D' },
+    { id:'upnext', label:'Up next', code:'E' },
+  ];
+  STARTERS = [
+    { label:'Drink water', title:'Drink 2 L of water', attr:'energy' },
+    { label:'Read', title:'Read 20 pages', attr:'mind' },
+    { label:'Walk', title:'Walk 8,000 steps', attr:'body' },
+    { label:'Meditate', title:'Meditate 10 min', attr:'spirit' },
+    { label:'Lift', title:'Strength session', attr:'body' },
+    { label:'Screens off', title:'No phone after 22:00', attr:'spirit' },
+  ];
+  OB_HABITS = [
+    { id:'t1', title:'Walk 8,000 steps', attr:'body', note:'Apple Health · auto' },
+    { id:'t2', title:'Read 20 pages', attr:'mind', note:'Daily · manual' },
+    { id:'t3', title:'Drink 2 L of water', attr:'energy', note:'Apple Health · auto' },
+    { id:'t4', title:'Meditate 10 min', attr:'spirit', note:'Daily · timer' },
+    { id:'t5', title:'In bed by 23:00', attr:'energy', note:'Apple Health · auto' },
+    { id:'t6', title:'Strength session', attr:'body', note:'3× week' },
+    { id:'t7', title:'Journal, five minutes', attr:'spirit', note:'Daily · manual' },
+  ];
+
+  state = this.seed();
+
+  seed() {
+    const p = this.props || {};
+    return {
+      themeMode: p.appearance === 'light' ? 'light' : 'dark',
+      variant: 'bento',
+      tab: 'today', push: null, pushArg: null,
+      sheet: false, sheetIn: false,
+      overlay: null, overlayIn: false, last: null, pendingLevel: null, snap: null, burstKey: 0,
+      onboarding: !!p.startOnOnboarding, obStep: 0, obAttrs: ['mind', 'body'], obPicks: ['t2', 't3', 't4'],
+      obPerms: { health: true, location: false, notif: true, icloud: true },
+      habits: this.seedHabits(), goals: this.seedGoals(), rewards: this.seedRewards(),
+      moments: [
+        { time:'13:10', text:'Drank 2 L of water', tag:'+30' },
+        { time:'07:58', text:'Journal, five minutes', tag:'+40' },
+        { time:'07:52', text:'Ran 5 km', tag:'+80' },
+        { time:'Yest.', text:'Night 17 on the sleep goal', tag:'Goal' },
+        { time:'Yest.', text:'Redeemed coffee out', tag:'−120' },
+      ],
+      player: { name:'Arjun', level:12, progress:930, need:1000, credits:1240, momentum:78, streak:23, total:214 },
+      attrs: { ...this.SEED_ATTRS },
+      filter: 'all', expanded: null, upIdx: 0, attrView: 'shape',
+      focus: { mins:25, attr:'mind', label:'', running:false, paused:false, elapsed:0 },
+      settings: { haptics:true, penLevel:true, penAttr:true, penCredits:false, reminders:true, alerts:'Digest', smart:true, icon:'graphite', health:true, location:true, icloud:true, watch:true },
+      form: this.blankForm('habit'),
+      toast: null, now: Date.now(),
+    };
+  }
+
+  seedHabits() { return [
+    { id:'h1', title:'Run 5 km', attr:'body', cadence:'Daily', track:'Health', slot:'Morning', time:'07:10', value:5, target:5, unit:'km', step:1, done:true, pts:80, credits:24, goal:'g3', goalStep:5 },
+    { id:'h2', title:'Journal, five minutes', attr:'spirit', cadence:'Daily', track:'Manual', slot:'Morning', time:'07:45', value:1, target:1, unit:'', step:1, done:true, pts:40, credits:12 },
+    { id:'h3', title:'Drink 2 L of water', attr:'energy', cadence:'Daily', track:'Health', slot:'Afternoon', time:'All day', value:2, target:2, unit:'L', step:0.25, done:true, pts:30, credits:9 },
+    { id:'h5', title:'Review one pull request', attr:'mind', cadence:'Weekly', track:'Manual', slot:'Afternoon', time:'By Friday', value:1, target:3, unit:'', step:1, done:false, pts:120, credits:36, subtasks:[{ t:'Pull the branch', d:true }, { t:'Read the diff end to end', d:false }, { t:'Leave written feedback', d:false }] },
+    { id:'h4', title:'Read 30 pages', attr:'mind', cadence:'Daily', track:'Manual', slot:'Evening', time:'19:30', value:18, target:30, unit:'pages', step:6, done:false, pts:60, credits:18 },
+    { id:'h6', title:'No-spend day', attr:'spirit', cadence:'Weekdays', track:'Manual', slot:'Evening', time:'Until 23:59', value:0, target:1, unit:'', step:1, done:false, pts:50, credits:15, goal:'g1', goalStep:50 },
+    { id:'h7', title:'Meditate 15 min', attr:'spirit', cadence:'Daily', track:'Timer', slot:'Evening', time:'21:00', value:0, target:15, unit:'min', step:5, done:false, pts:50, credits:15 },
+    { id:'h8', title:'In bed by 23:30', attr:'energy', cadence:'Daily', track:'Health', slot:'Evening', time:'23:30', value:0, target:1, unit:'', step:1, done:false, pts:50, credits:15, goal:'g2', goalStep:1 },
+    { id:'h9', title:'Stretch 10 min', attr:'body', cadence:'Daily', track:'Timer', slot:'Evening', time:'Anytime', value:0, target:10, unit:'min', step:5, done:false, pts:20, credits:0, optional:true },
+  ]; }
+
+  seedGoals() { return [
+    { id:'g1', title:'Save $20,000', kind:'Savings', source:'Manual', prefix:'$', unit:'', start:0, current:12400, target:20000, day:48, step:250, hist:[6200,7000,7900,8600,9800,10700,11600,12400] },
+    { id:'g2', title:'In bed by 23:30, 30 nights', kind:'Sleep', source:'Apple Health', prefix:'', unit:'nights', start:0, current:18, target:30, day:22, step:1, hist:[4,7,9,11,13,15,16,18] },
+    { id:'g3', title:'Half marathon base', kind:'Distance', source:'Apple Health', prefix:'', unit:'km', start:0, current:142, target:300, day:39, step:5, hist:[38,55,71,86,101,115,128,142] },
+    { id:'g4', title:'Reach 78 kg', kind:'Weight', source:'Apple Health', prefix:'', unit:'kg', start:84, current:80.6, target:78, day:61, step:0.2, inverse:true, hist:[83.4,82.9,82.5,82.0,81.6,81.3,80.9,80.6] },
+  ]; }
+
+  seedRewards() { return [
+    { id:'r1', name:'Coffee out', note:'Any café, no guilt', cost:120, count:3 },
+    { id:'r2', name:'Rest day', note:'Restores 20 momentum', cost:300, momentum:20, count:1 },
+    { id:'r3', name:'Movie night', note:'Cinema or couch', cost:350, count:2 },
+    { id:'r4', name:'A new book', note:'Hardback allowed', cost:600, count:0 },
+    { id:'r5', name:'Weekend away', note:'Two nights, somewhere quiet', cost:4000, count:0 },
+  ]; }
+
+  blankForm(kind) {
+    return { kind, mode:'express', title:'', attr:'mind', effort:1, days:[true,true,true,true,true,true,true], reminder:true, time:'20:00', track:'Manual', goal:null, optional:false, goalType:'Savings', goalTarget:'', goalDays:60, goalAuto:false };
+  }
+
+  componentDidMount() {
+    this.applyVars();
+    this._iv = setInterval(() => this.tick(), 1000);
+  }
+  componentWillUnmount() { clearInterval(this._iv); clearTimeout(this._tt); }
+  componentDidUpdate(prev) {
+    const p = this.props || {}, q = prev || {};
+    if (p.appearance !== q.appearance && p.appearance) this.setState({ themeMode: p.appearance });
+        if (p.startOnOnboarding !== q.startOnOnboarding) this.setState({ onboarding: !!p.startOnOnboarding, obStep: 0 });
+    this.applyVars();
+  }
+  theme() {
+    const m = this.state.themeMode;
+    if (m === 'system') return (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    return m;
+  }
+  applyVars() {
+    const el = document.querySelector('[data-sil-root]');
+    if (!el) return;
+    const th = this.theme();
+    const acc = (this.A[this.props.accent] || this.A.violet)[th];
+    const vars = { ...this.T[th], ...acc };
+    const key = JSON.stringify(vars);
+    if (el.__silKey === key) return;
+    el.__silKey = key;
+    Object.entries(vars).forEach(([k, v]) => el.style.setProperty('--' + k, v));
+  }
+
+  tick() {
+    const s = this.state, F = s.focus;
+    if (F.running && !F.paused) {
+      const step = (this.props.demoTimer ?? true) ? 30 : 1;
+      const total = F.mins * 60;
+      const elapsed = Math.min(total, F.elapsed + step);
+      this.setState({ now: Date.now(), focus: { ...F, elapsed } }, () => { if (elapsed >= total) this.finishFocus(false); });
+    } else this.setState({ now: Date.now() });
+  }
+
+  fmt(n) { return Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 }); }
+  at(id) { return this.ATTRS.find(a => a.id === id) || this.ATTRS[0]; }
+  hhmm(d) { d = d || new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  rng(seed) { let a = seed; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  isoWeek(d) { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - y0) / 86400000 + 1) / 7); }
+  titleFor(level) { return level < 5 ? 'Beginner' : level < 10 ? 'Apprentice' : level < 15 ? 'Practitioner' : level < 20 ? 'Adept' : 'Steward'; }
+  showToast(text) { clearTimeout(this._tt); this.setState({ toast: text }); this._tt = setTimeout(() => this.setState({ toast: null }), 2600); }
+  coach(left, hour) {
+    if (left <= 0) return ['All done.', 'Rest is part of it.'];
+    if (left === 1) return ['One left.', 'Finish clean.'];
+    return [`${this.W[left] || left} left.`, hour < 12 ? 'The day is still yours.' : hour < 17 ? 'Plenty of afternoon left.' : 'You have the evening.'];
+  }
+  gpct(g) { const r = g.inverse ? (g.start - g.current) / (g.start - g.target) : (g.current - g.start) / ((g.target - g.start) || 1); return Math.max(0, Math.min(1, r)); }
+  stepGoal(g, step) { return g.inverse ? Math.max(g.target, +(g.current - step).toFixed(2)) : Math.min(g.target, +(g.current + step).toFixed(2)); }
+
+  award(s, pts, credits, attr, gain, mom) {
+    let { level, progress, need } = s.player;
+    progress += pts;
+    let pendingLevel = null;
+    if (progress >= need) { pendingLevel = { from: level, to: level + 1 }; level += 1; progress -= need; }
+    const player = { ...s.player, level, progress, credits: s.player.credits + credits, momentum: Math.min(100, s.player.momentum + mom), total: s.player.total + 1 };
+    const attrs = { ...s.attrs, [attr]: s.attrs[attr] + gain };
+    return { player, attrs, pendingLevel };
+  }
+
+  completeHabit(id, prev) {
+    const s = this.state, h = s.habits.find(x => x.id === id);
+    if (!h || h.done) return;
+    const snap = { habits: s.habits, player: s.player, attrs: s.attrs, goals: s.goals, moments: s.moments };
+    if (prev) snap.habits = s.habits.map(x => x.id === id ? { ...x, ...prev } : x);
+    const habits = s.habits.map(x => x.id === id ? { ...x, done: true, prevValue: prev ? prev.value : x.value, prevSubs: prev ? prev.subtasks : x.subtasks, value: x.target, subtasks: x.subtasks ? x.subtasks.map(t => ({ ...t, d: true })) : x.subtasks } : x);
+    const cr = h.optional ? 0 : h.credits;
+    const r = this.award(s, h.pts, cr, h.attr, 2, h.optional ? 1 : 3);
+    let goalNote = null;
+    const goals = h.goal ? s.goals.map(g => { if (g.id !== h.goal) return g; const ng = { ...g, current: this.stepGoal(g, h.goalStep || g.step) }; goalNote = `${g.title} · ${Math.round(this.gpct(ng) * 100)}%`; return ng; }) : s.goals;
+    const moments = [{ time: this.hhmm(), text: h.title, tag: `+${h.pts}` }, ...s.moments];
+    const left = habits.filter(x => !x.done && !x.optional).length;
+    this.setState({ habits, goals, moments, snap, player: r.player, attrs: r.attrs, pendingLevel: r.pendingLevel,
+      last: { kind:'habit', title:h.title, pts:h.pts, credits:cr, attr:h.attr, gain:2, goalNote, left, optional: !!h.optional }, burstKey: s.burstKey + 1 });
+    this.openOverlay('complete');
+  }
+
+  undoHabit(id) {
+    const s = this.state, h = s.habits.find(x => x.id === id);
+    if (!h || !h.done) return;
+    let { level, progress, need, credits, momentum } = s.player;
+    progress -= h.pts;
+    if (progress < 0) { if (level > 1) { level -= 1; progress += need; } else progress = 0; }
+    credits = Math.max(0, credits - (h.optional ? 0 : h.credits));
+    momentum = Math.max(0, momentum - (h.optional ? 1 : 3));
+    const habits = s.habits.map(x => x.id === id ? { ...x, done: false, value: x.prevValue ?? 0, subtasks: x.prevSubs || (x.subtasks ? x.subtasks.map(t => ({ ...t, d: false })) : x.subtasks) } : x);
+    this.setState({ habits, player: { ...s.player, level, progress, credits, momentum, total: s.player.total - 1 }, attrs: { ...s.attrs, [h.attr]: s.attrs[h.attr] - 2 } });
+    this.showToast(`Undone. ${h.title} is back on the list.`);
+  }
+
+  toggleHabit(id) { const h = this.state.habits.find(x => x.id === id); if (!h) return; h.done ? this.undoHabit(id) : this.completeHabit(id); }
+
+  logHabit(id) {
+    const s = this.state, h = s.habits.find(x => x.id === id);
+    if (!h || h.done) return;
+    const value = Math.min(h.target, +(h.value + h.step).toFixed(2));
+    if (value >= h.target) { this.completeHabit(id, { value: h.value }); return; }
+    this.setState({ habits: s.habits.map(x => x.id === id ? { ...x, value } : x) });
+    this.showToast(`${this.fmt(value)} of ${this.fmt(h.target)} ${h.unit}. Keep going.`);
+  }
+
+  toggleSub(hid, j) {
+    const s = this.state, h = s.habits.find(x => x.id === hid);
+    if (!h || h.done) return;
+    const subs = h.subtasks.map((t, k) => k === j ? { ...t, d: !t.d } : t);
+    const n = subs.filter(t => t.d).length;
+    if (n === subs.length) { this.completeHabit(hid, { value: h.value, subtasks: h.subtasks }); return; }
+    this.setState({ habits: s.habits.map(x => x.id === hid ? { ...x, subtasks: subs, value: n } : x) });
+  }
+
+  openOverlay(name) {
+    clearTimeout(this._ot);
+    this.setState({ overlay: name, overlayIn: false }, () => { this._ot = setTimeout(() => this.setState({ overlayIn: true }), 30); });
+  }
+  closeOverlay(next) {
+    this.setState({ overlayIn: false });
+    clearTimeout(this._ot);
+    this._ot = setTimeout(() => { if (next) this.openOverlay(next); else this.setState({ overlay: null }); }, 260);
+  }
+  continueOverlay() {
+    if (this.state.overlay === 'complete' && this.state.pendingLevel) this.closeOverlay('levelup');
+    else { if (this.state.overlay === 'levelup') this.setState({ pendingLevel: null }); this.closeOverlay(); }
+  }
+  undoLast() {
+    const sn = this.state.snap;
+    if (!sn) return this.closeOverlay();
+    this.setState({ ...sn, snap: null, pendingLevel: null });
+    this.closeOverlay();
+    this.showToast('Undone.');
+  }
+
+  openSheet(kind) {
+    clearTimeout(this._st);
+    this.setState({ sheet: true, sheetIn: false, form: this.blankForm(kind || 'habit') }, () => { this._st = setTimeout(() => this.setState({ sheetIn: true }), 30); });
+  }
+  closeSheet() { this.setState({ sheetIn: false }); clearTimeout(this._st); this._st = setTimeout(() => this.setState({ sheet: false }), 300); }
+  setForm(patch) { this.setState({ form: { ...this.state.form, ...patch } }); }
+  saveForm() {
+    const s = this.state, f = s.form;
+    if (!f.title.trim()) { this.showToast('Give it a name first.'); return; }
+    if (f.kind === 'habit') {
+      const effort = [{ pts:30, cr:9 }, { pts:60, cr:18 }, { pts:100, cr:30 }][f.effort];
+      const n = f.days.filter(Boolean).length;
+      const wk = f.days.slice(1, 6).every(Boolean) && !f.days[0] && !f.days[6];
+      const cadence = n === 7 ? 'Daily' : wk ? 'Weekdays' : `${n}× week`;
+      const slot = f.time < '12:00' ? 'Morning' : f.time < '17:00' ? 'Afternoon' : 'Evening';
+      const h = { id:'h' + Date.now(), title:f.title.trim(), attr:f.attr, cadence, track:f.mode === 'custom' ? f.track : 'Manual', slot, time:f.reminder ? f.time : 'Anytime', value:0, target:1, unit:'', step:1, done:false, pts:effort.pts, credits:f.optional ? 0 : effort.cr, optional:f.optional, goal:f.goal, goalStep:1 };
+      this.setState({ habits: [...s.habits, h] });
+      this.closeSheet();
+      this.showToast('Added. It starts today.');
+    } else {
+      const t = parseFloat(String(f.goalTarget).replace(/[^0-9.]/g, '')) || 100;
+      const g = { id:'g' + Date.now(), title:f.title.trim(), kind:f.goalType, source:f.goalAuto ? 'Apple Health' : 'Manual', prefix:f.goalType === 'Savings' ? '$' : '', unit:{ Savings:'', Weight:'kg', Steps:'steps', Sleep:'nights', Workouts:'sessions', Custom:'' }[f.goalType], start:0, current:0, target:t, day:0, step:Math.max(1, Math.round(t / 40)), hist:[0,0,0,0,0,0,0,0] };
+      this.setState({ goals: [...s.goals, g], tab:'goals', push:null });
+      this.closeSheet();
+      this.showToast(`${f.goalDays} days. Starting from zero is fine.`);
+    }
+  }
+
+  contribute(gid) {
+    const s = this.state, g = s.goals.find(x => x.id === gid);
+    if (!g) return;
+    const ng = { ...g, current: this.stepGoal(g, g.step) };
+    ng.hist = [...g.hist.slice(0, -1), ng.current];
+    const pct = Math.round(this.gpct(ng) * 100);
+    this.setState({ goals: s.goals.map(x => x.id === gid ? ng : x), moments: [{ time: this.hhmm(), text: `Logged progress on ${g.title}`, tag: 'Goal' }, ...s.moments] });
+    this.showToast(pct >= 100 ? 'Goal complete. Take a moment.' : `Logged. ${pct}% there.`);
+  }
+
+  redeem(rid) {
+    const s = this.state, r = s.rewards.find(x => x.id === rid);
+    if (!r) return;
+    if (s.player.credits < r.cost) { this.showToast(`${this.fmt(r.cost - s.player.credits)} more credits to go.`); return; }
+    const player = { ...s.player, credits: s.player.credits - r.cost, momentum: Math.min(100, s.player.momentum + (r.momentum || 0)) };
+    this.setState({ player, rewards: s.rewards.map(x => x.id === rid ? { ...x, count: x.count + 1 } : x), moments: [{ time: this.hhmm(), text: `Redeemed ${r.name.toLowerCase()}`, tag: `−${r.cost}` }, ...s.moments] });
+    this.showToast(r.momentum ? `Rest day logged. Momentum +${r.momentum}.` : `Enjoy it. −${this.fmt(r.cost)} credits.`);
+  }
+
+  startFocus() { this.setState({ focus: { ...this.state.focus, running:true, paused:false, elapsed:0 } }); }
+  finishFocus(early) {
+    const s = this.state, F = s.focus;
+    if (!F.running) return;
+    const total = F.mins * 60;
+    const ratio = early ? F.elapsed / total : 1;
+    const pts = Math.round(F.mins * 2 * ratio), cr = Math.round(F.mins * 0.6 * ratio);
+    const gain = early ? 1 : 3;
+    const r = this.award(s, pts, cr, F.attr, gain, early ? 1 : 2);
+    const mins = Math.max(1, Math.round(F.elapsed / 60));
+    const title = F.label.trim() || `${F.mins}-minute focus`;
+    this.setState({ snap: { habits: s.habits, player: s.player, attrs: s.attrs, goals: s.goals, moments: s.moments }, player: r.player, attrs: r.attrs, pendingLevel: r.pendingLevel,
+      moments: [{ time: this.hhmm(), text: `Focus: ${title}`, tag: `+${pts}` }, ...s.moments],
+      focus: { ...F, running:false, paused:false, elapsed:0 },
+      last: { kind:'focus', title, pts, credits:cr, attr:F.attr, gain, early, mins, left: s.habits.filter(x => !x.done && !x.optional).length }, burstKey: s.burstKey + 1 });
+    this.openOverlay('complete');
+  }
+
+  go(patch) {
+    clearTimeout(this._ot); clearTimeout(this._st);
+    this.setState({ overlay:null, overlayIn:false, sheet:false, sheetIn:false, onboarding:false, expanded:null, ...patch });
+  }
+
+  hv(h, i) {
+    const a = this.at(h.attr), f = n => this.fmt(n);
+    const pct = h.done ? 1 : Math.max(0, Math.min(1, h.value / h.target));
+    const subDone = h.subtasks ? h.subtasks.filter(x => x.d).length : 0;
+    let metric;
+    if (h.subtasks) metric = `${subDone} of ${h.subtasks.length} steps`;
+    else if (h.unit) metric = `${f(h.value)} of ${f(h.target)} ${h.unit}`;
+    else metric = h.done ? 'Done' : 'Not yet';
+    const short = h.subtasks ? `${subDone}/${h.subtasks.length}` : h.unit ? `${f(h.value)}/${f(h.target)}` : (h.done ? '1/1' : '0/1');
+    const exp = this.state.expanded === h.id;
+    const goal = h.goal ? this.state.goals.find(g => g.id === h.goal) : null;
+    return {
+      id:h.id, title:h.title, attrName:a.name, glyph:a.glyph, metric, short,
+      sub: h.done ? `Done · ${a.name}` : `${metric} · ${a.name}`,
+      time:h.time, cadence:h.cadence, track:h.track, slot:h.slot, optional:!!h.optional,
+      idx: String(i + 1).padStart(2, '0'),
+      pts:`+${h.pts}`, creditsText: h.optional ? 'No credits' : `+${h.credits} credits`,
+      pctText:`${Math.round(pct * 100)}%`, pct,
+      off21:(131.95 * (1 - pct)).toFixed(2), off96:(603.19 * (1 - pct)).toFixed(2),
+      isDone:!!h.done, notDone:!h.done,
+      deco: h.done ? 'line-through' : 'none',
+      titleInk: h.done ? 'var(--ink3)' : 'var(--ink)',
+      boxBg: h.done ? 'var(--accent)' : 'transparent', boxBorder: h.done ? 'var(--accent)' : 'var(--line2)',
+      circBg: h.done ? 'var(--inv)' : 'transparent', circBorder: h.done ? 'var(--inv)' : 'var(--line2)',
+      pillW: `${(pct * 100).toFixed(1)}%`,
+      pillInk: pct >= 0.5 ? 'var(--onAccent)' : 'var(--ink)',
+      pillInk2: pct >= 0.9 ? 'var(--onAccent)' : 'var(--ink3)',
+      tagLine: [h.cadence, h.track === 'Health' ? 'Apple Health' : h.track, h.optional ? 'Optional' : null].filter(Boolean).join(' · '),
+      linked: !!goal, goalName: goal ? goal.title : '',
+      hasSubs: !!h.subtasks,
+      subs: (h.subtasks || []).map((t, j) => ({ t:t.t, d:!!t.d, deco:t.d ? 'line-through' : 'none', ink:t.d ? 'var(--ink3)' : 'var(--ink)', bg:t.d ? 'var(--inv)' : 'var(--card2)', onTap:() => this.toggleSub(h.id, j) })),
+      canLog: !h.done && !!h.unit && h.track !== 'Health',
+      isAuto: h.track === 'Health' && !h.done,
+      logLabel: h.unit ? `+${f(h.step)} ${h.unit}` : 'Log',
+      isExp: exp,
+      onTap: () => this.toggleHabit(h.id),
+      onExpand: () => this.setState({ expanded: exp ? null : h.id }),
+      onLog: () => this.logHabit(h.id),
+      doneLabel: h.done ? 'Undo' : 'Mark done',
+      rowBg: exp ? 'var(--card)' : 'transparent', rowBorder: exp ? 'var(--line)' : 'transparent',
+      chevRot: exp ? 'rotate(90deg)' : 'none',
+    };
+  }
+
+  gv(g, i, n, allHabits) {
+    const f = v => this.fmt(v), pct = this.gpct(g);
+    const ticks = k => Array.from({ length:k }, (_, j) => ({ bg: j < Math.round(pct * k) ? 'var(--ink)' : 'var(--line2)' }));
+    const hist = g.hist, pace = hist[hist.length - 1] - hist[hist.length - 2];
+    const remaining = Math.abs(g.target - g.current);
+    const weeks = pace !== 0 && remaining > 0 ? Math.ceil(remaining / Math.abs(pace)) : null;
+    const linked = allHabits.filter(h => h.goalId === g.id);
+    const u = g.unit ? ' ' + g.unit : '';
+    const lo = Math.min(...hist), hi = Math.max(...hist), pad = (hi - lo) * 0.18 || 1;
+    const Wd = 318, H = 120;
+    const pts = hist.map((v, j) => [10 + j * (Wd - 20) / (hist.length - 1), H - 14 - ((v - lo + pad) / (hi - lo + 2 * pad)) * (H - 28)]);
+    const line = pts.map(p => p.map(x => x.toFixed(1)).join(',')).join(' ');
+    const area = `M${pts[0][0].toFixed(1)},${H} L` + pts.map(p => p.map(x => x.toFixed(1)).join(',')).join(' L') + ` L${pts[pts.length - 1][0].toFixed(1)},${H} Z`;
+    const wk = this.isoWeek(new Date(this.state.now));
+    return {
+      id:g.id, title:g.title, kind:g.kind, source:g.source,
+      idx:`${String(i + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`,
+      dayText: g.day ? `Day ${g.day}` : 'New',
+      value: g.prefix + f(g.current), unitText: g.unit,
+      ofText: `of ${g.prefix}${f(g.target)}`,
+      pctText: `${Math.round(pct * 100)}%`,
+      ticks: ticks(36), ticksLg: ticks(44),
+      etaText: weeks ? `About ${weeks} week${weeks === 1 ? '' : 's'} at this pace` : remaining === 0 ? 'Complete' : 'Log a few weeks to see a pace',
+      etaShort: weeks ? `ETA ${weeks} wk` : remaining === 0 ? 'Done' : 'New',
+      paceText: pace === 0 ? '—' : `${pace > 0 ? '+' : '−'}${g.prefix}${f(Math.abs(+pace.toFixed(2)))}${u}`,
+      startText: g.prefix + f(g.start), nowText: g.prefix + f(g.current), targetText: g.prefix + f(g.target),
+      linkedText: linked.length ? `${linked.length} habit${linked.length === 1 ? '' : 's'} linked` : 'No habits linked',
+      sourceLine: `${g.source} · ${linked.length ? linked.length + ' linked' : 'none linked'}`,
+      linkedItems: linked, hasLinked: linked.length > 0, noLinked: linked.length === 0,
+      milestones: [25, 50, 75, 100].map(m => ({ label:`${m}%`, got: pct * 100 >= m, bg: pct * 100 >= m ? 'var(--inv)' : 'transparent', ink: pct * 100 >= m ? 'var(--onInv)' : 'var(--ink3)', border: pct * 100 >= m ? 'var(--inv)' : 'var(--line2)' })),
+      sparkLine: line, sparkArea: area, sparkX: pts[pts.length - 1][0].toFixed(1), sparkY: pts[pts.length - 1][1].toFixed(1),
+      weekLabels: hist.map((_, j) => ({ label: `W${wk - hist.length + 1 + j}` })).filter((_, j) => j % 2 === 1),
+      isManual: g.source === 'Manual', isAuto: g.source !== 'Manual',
+      contributeLabel: g.source === 'Manual' ? `Log +${g.prefix}${f(g.step)}` : `Log ${g.inverse ? '−' : '+'}${f(g.step)}${u} manually`,
+      onOpen: () => this.setState({ push:'goal', pushArg:g.id, expanded:null }),
+      onContribute: () => this.contribute(g.id),
+    };
+  }
+
+  renderVals() {
+    const s = this.state, p = s.player, f = n => this.fmt(n);
+    const th = this.theme(), isDark = th === 'dark';
+    const now = new Date(s.now), hour = now.getHours();
+    const habitsAll = s.habits.map((h, i) => ({ ...this.hv(h, i), goalId: h.goal }));
+    const notDone = habitsAll.filter(h => !h.isDone), done = habitsAll.filter(h => h.isDone);
+    const left = notDone.filter(h => !h.optional).length;
+    const [coachA, coachB] = this.coach(left, hour);
+    const todayOrdered = [...notDone, ...done];
+    const dayPct = Math.round(done.length / (habitsAll.length || 1) * 100);
+    const week = this.isoWeek(now);
+    const rnd = this.rng(11);
+
+    const months = [];
+    for (let k = 2; k >= 0; k--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
+      const days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      const off = (d.getDay() + 6) % 7, cells = [];
+      for (let b = 0; b < off; b++) cells.push({ bg:'transparent', op:1 });
+      for (let day = 1; day <= days; day++) {
+        const dt = new Date(d.getFullYear(), d.getMonth(), day), r = rnd();
+        const isToday = dt.toDateString() === now.toDateString(), future = dt > now && !isToday;
+        cells.push(isToday ? { bg:'var(--accent)', op:1 } : future ? { bg:'var(--dot)', op:0.45 } : r > 0.58 ? { bg:'var(--ink)', op:1 } : r > 0.28 ? { bg:'var(--ink)', op:0.35 } : { bg:'var(--dot)', op:1 });
+      }
+      months.push({ name: d.toLocaleString('en-US', { month:'short' }), cells });
+    }
+    const hr = this.rng(5), heat = [];
+    const todayIdx = (now.getDay() + 6) % 7;
+    for (let c = 0; c < 26; c++) {
+      const col = [];
+      for (let r = 0; r < 7; r++) {
+        const future = c === 25 && r > todayIdx, x = hr();
+        col.push(future ? { bg:'transparent', op:1 } : (c === 25 && r === todayIdx) ? { bg:'var(--accent)', op:1 } : x > 0.55 ? { bg:'var(--ink)', op:1 } : x > 0.22 ? { bg:'var(--ink)', op:0.35 } : { bg:'var(--dot)', op:1 });
+      }
+      heat.push({ cells: col });
+    }
+    const sparkles = Array.from({ length:52 }, (_, j) => ({ fill: j < week - 1 ? 'var(--ink)' : j === week - 1 ? 'var(--accentInk)' : 'var(--dot)' }));
+    const yStart = new Date(now.getFullYear(), 0, 1), yEnd = new Date(now.getFullYear() + 1, 0, 1);
+    const yearPct = Math.floor((now - yStart) / (yEnd - yStart) * 100);
+
+    const up = notDone.length ? notDone[((s.upIdx % notDone.length) + notDone.length) % notDone.length] : null;
+    const tabDef = id => ({ on: s.tab === id, flex: s.tab === id ? '1.9' : '1', bg: s.tab === id ? 'var(--card2)' : 'transparent', ink: s.tab === id ? 'var(--ink)' : 'var(--ink3)', onTap: () => this.go({ tab:id, push:null }) });
+    const sel = on => ({ bg: on ? 'var(--inv)' : 'var(--chip)', ink: on ? 'var(--onInv)' : 'var(--ink)' });
+    const seg = on => ({ bg: on ? 'var(--card)' : 'transparent', ink: on ? 'var(--ink)' : 'var(--ink3)', sh: on ? '0 1px 3px rgba(0,0,0,0.18)' : 'none' });
+    const tg = key => { const on = !!s.settings[key]; return { bg: on ? 'var(--accent)' : 'var(--chip)', x: on ? '20px' : '0px', onTap: () => this.setState({ settings: { ...s.settings, [key]: !on } }) }; };
+
+    const goalsV = s.goals.map((g, i) => this.gv(g, i, s.goals.length, habitsAll));
+    const goalCur = goalsV.find(g => g.id === s.pushArg) || goalsV[0];
+    const best = s.goals.length ? s.goals.reduce((a, b) => this.gpct(b) > this.gpct(a) ? b : a) : null;
+
+    const F = s.focus, total = F.mins * 60, rem = Math.max(0, total - F.elapsed);
+    const lit = Math.round((F.running ? rem / total : F.mins / 90) * 60);
+    if (!this._dial) this._dial = Array.from({ length:60 }, (_, j) => { const t = j / 60 * Math.PI * 2, major = j % 5 === 0, r1 = 142, r2 = major ? 124 : 132; return { x1:(150 + r1 * Math.sin(t)).toFixed(1), y1:(150 - r1 * Math.cos(t)).toFixed(1), x2:(150 + r2 * Math.sin(t)).toFixed(1), y2:(150 - r2 * Math.cos(t)).toFixed(1), w: major ? 2 : 1.2 }; });
+    const dial = this._dial.map((d, j) => ({ ...d, op: j < lit ? 1 : 0.16 }));
+    const fPts = F.mins * 2, fCr = Math.round(F.mins * 0.6);
+    const mmss = n => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+
+    const R = 74, cx = 100, cy = 100, nv = k => s.attrs[k] / 200;
+    const radar = `${cx},${(cy - R * nv('body')).toFixed(1)} ${(cx + R * nv('mind')).toFixed(1)},${cy} ${cx},${(cy + R * nv('energy')).toFixed(1)} ${(cx - R * nv('spirit')).toFixed(1)},${cy}`;
+    const ring = t => `${cx},${cy - R * t} ${cx + R * t},${cy} ${cx},${cy + R * t} ${cx - R * t},${cy}`;
+    const domi = this.ATTRS.reduce((a, b) => s.attrs[b.id] > s.attrs[a.id] ? b : a);
+    const meterBars = Array.from({ length:20 }, (_, j) => ({ bg: j < Math.round(p.momentum / 5) ? 'var(--ink)' : 'var(--line2)', h: `${10 + j * 1.6}px` }));
+
+    const lv = s.pendingLevel || { from: p.level - 1, to: p.level };
+    const last = s.last || { kind:'habit', title:'Read 30 pages', pts:60, credits:18, attr:'mind', gain:2, left:4 };
+    const lastCoach = this.coach(last.left ?? left, hour);
+    const fm = s.form;
+    const efforts = [{ label:'Light', pts:30, cr:9 }, { label:'Steady', pts:60, cr:18 }, { label:'Demanding', pts:100, cr:30 }];
+    const ef = efforts[fm.effort];
+    const S = s.settings;
+    const burst = React.createElement('div', { key: 'b' + s.burstKey, style: { position:'absolute', left:'50%', top:'50%', width:0, height:0 } },
+      Array.from({ length:16 }, (_, j) => { const ang = j / 16 * Math.PI * 2 + (j % 2) * 0.2, dist = 70 + (j % 4) * 22; return React.createElement('span', { key:j, style: { position:'absolute', width: j % 3 === 0 ? 7 : 5, height: j % 3 === 0 ? 7 : 5, borderRadius: j % 2 ? 2 : 1, background: j % 4 === 0 ? 'var(--accent)' : 'var(--ink)', left:-3, top:-3, '--dx': `${(Math.cos(ang) * dist).toFixed(0)}px`, '--dy': `${(Math.sin(ang) * dist).toFixed(0)}px`, '--rot': `${j * 40}deg`, animation:`silBurst 900ms cubic-bezier(.2,.7,.2,1) ${j * 12}ms forwards` } }); }));
+    const liveDot = React.createElement('span', { style: { width:8, height:8, borderRadius:8, background:'var(--accent)', display:'inline-block', animation: F.paused ? 'none' : 'silBreath 2.2s ease-in-out infinite' } });
+
+    const jumpsDef = [
+      ['Today', () => this.go({ tab:'today', push:null })],
+      ['Habits', () => this.go({ tab:'today', push:'habits' })],
+      ['Goals', () => this.go({ tab:'goals', push:null })],
+      ['Goal detail', () => this.go({ tab:'goals', push:'goal', pushArg:'g1' })],
+      ['Focus', () => this.go({ tab:'focus', push:null, focus: { ...s.focus, running:false, paused:false, elapsed:0 } })],
+      ['Focus running', () => { this.go({ tab:'focus', push:null }); this.setState({ focus: { ...s.focus, running:true, paused:false, elapsed: Math.round(s.focus.mins * 60 * 0.42) } }); }],
+      ['You', () => this.go({ tab:'you', push:null })],
+      ['Settings', () => this.go({ tab:'you', push:'settings' })],
+      ['Widgets', () => this.go({ tab:'you', push:'widgets' })],
+      ['New habit', () => { this.go({}); this.openSheet('habit'); }],
+      ['New goal', () => { this.go({}); this.openSheet('goal'); }],
+      ['Completion', () => { this.go({ tab:'today', push:null }); const h = s.habits.find(x => !x.done); if (h) setTimeout(() => this.completeHabit(h.id), 40); }],
+      ['Level up', () => { this.go({ pendingLevel: { from: p.level, to: p.level + 1 } }); this.openOverlay('levelup'); }],
+      ['Momentum reset', () => { this.go({}); this.openOverlay('reset'); }],
+      ['Onboarding', () => this.go({ onboarding:true, obStep:0 })],
+    ];
+
+    return {
+      isDark,
+      variantOpts: this.VARIANTS.map(o => ({ ...o, bg: s.variant === o.id ? '#F4F4F5' : 'rgba(255,255,255,0.05)', ink: s.variant === o.id ? '#0A0A0C' : '#D4D4D8', onTap: () => this.go({ variant:o.id, tab:'today', push:null }) })),
+      jumps: jumpsDef.map(([label, fn]) => ({ label, onTap: fn })),
+      v: { bento: s.variant === 'bento', instrument: s.variant === 'instrument', editorial: s.variant === 'editorial', year: s.variant === 'year', upnext: s.variant === 'upnext' },
+      tabIs: { today: s.tab === 'today', goals: s.tab === 'goals', focus: s.tab === 'focus', you: s.tab === 'you' },
+      tabs: { today: tabDef('today'), goals: tabDef('goals'), focus: tabDef('focus'), you: tabDef('you') },
+      pushIs: { habits: s.push === 'habits', goal: s.push === 'goal', settings: s.push === 'settings', widgets: s.push === 'widgets' },
+      pop: () => this.setState({ push:null, expanded:null }),
+      openHabits: () => this.setState({ push:'habits', expanded:null }),
+      openYou: () => this.go({ tab:'you', push:null }),
+      openSettings: () => this.setState({ push:'settings' }),
+      openWidgets: () => this.setState({ push:'widgets' }),
+      openCreate: () => this.openSheet(s.tab === 'goals' ? 'goal' : 'habit'),
+      openCreateHabit: () => this.openSheet('habit'),
+      openCreateGoal: () => this.openSheet('goal'),
+
+      player: p, creditsText: f(p.credits), title: `${this.titleFor(p.level)} · ${domi.name}-led`,
+      levelW: `${(p.progress / p.need * 100).toFixed(1)}%`, toNext: f(p.need - p.progress), nextLevel: p.level + 1, progressText: `${f(p.progress)} / ${f(p.need)}`,
+      momentumOff: (201.06 * (1 - p.momentum / 100)).toFixed(2), meterBars,
+      dateShort: now.toLocaleDateString('en-US', { weekday:'short', day:'numeric', month:'short' }),
+      dateLong: now.toLocaleDateString('en-US', { weekday:'long', day:'numeric', month:'long' }),
+      clock: now.toLocaleTimeString('en-GB', { hour12:false }), week, year: now.getFullYear(), yearPct,
+      coachA, coachB, leftCount: left, doneCount: done.length, totalCount: habitsAll.length, allClear: notDone.length === 0,
+      dayOff: (150.8 * (1 - done.length / (habitsAll.length || 1))).toFixed(2), dayPct, dayMarkTop: `${100 - dayPct}%`,
+      nextTime: notDone[0] ? notDone[0].time : '—', nextTitle: notDone[0] ? notDone[0].title : 'Nothing',
+      habitsAll, todayOrdered, nextUp: notDone.slice(0, 4), months, heat, sparkles,
+      rulerTicks: Array.from({ length:21 }, (_, k) => ({ top: `${k * 5}%`, w: k % 5 === 0 ? '18px' : '8px', op: (100 - k * 5) <= dayPct ? 1 : 0.35 })),
+      rulerLabels: [0, 25, 50, 75, 100].map(v => ({ top: `${100 - v}%`, label: String(v).padStart(3, '0') })),
+      attrTable: this.ATTRS.map((a, i) => ({ name:a.name, value:String(s.attrs[a.id]), delta: `+${s.attrs[a.id] - this.SEED_ATTRS[a.id] + (a.id === 'body' ? 2 : a.id === 'spirit' ? 2 : a.id === 'energy' ? 2 : 0)} today`, bl: i ? '1px solid var(--line2)' : 'none' })),
+      hasUp: !!up, up: up || {}, upNum: up ? String(notDone.indexOf(up) + 1).padStart(3, '0') : '000', upTotal: String(notDone.length).padStart(3, '0'),
+      upPrev: () => this.setState({ upIdx: s.upIdx - 1 }), upNext: () => this.setState({ upIdx: s.upIdx + 1 }),
+
+      filterOpts: [['all','All'],['daily','Daily'],['weekly','Weekly'],['linked','Goal-linked'],['optional','Optional']].map(([id, label]) => ({ label, ...sel(s.filter === id), onTap: () => this.setState({ filter:id }) })),
+      groups: ['Morning','Afternoon','Evening'].map(slot => {
+        const items = habitsAll.filter(h => h.slot === slot && (s.filter === 'all' || (s.filter === 'daily' && h.cadence === 'Daily') || (s.filter === 'weekly' && h.cadence !== 'Daily') || (s.filter === 'linked' && h.linked) || (s.filter === 'optional' && h.optional)));
+        return { slot, items, count: `${items.filter(h => h.isDone).length}/${items.length}` };
+      }).filter(g => g.items.length),
+
+      goalsV, goalCur, goalCount: s.goals.length, goalTop: goalsV[0] || { ticks: [] },
+      goalsCoach: best ? `${this.W[s.goals.length] || s.goals.length} in motion. ${best.title} is closest.` : 'Nothing in motion yet.',
+
+      focus: F, isRunning: F.running, notRunning: !F.running, isPaused: F.paused, notPaused: !F.paused,
+      focusTitle: F.label.trim() || `${F.mins}-minute session`,
+      avatarOff: (188.5 * (1 - p.progress / p.need)).toFixed(2), attrsV: s.attrs,
+      widgetNext: notDone.slice(0, 3), lockTime: this.hhmm(now), lockOff: (138.23 * (1 - p.momentum / 100)).toFixed(2),
+      focusMins: F.mins, focusClock: mmss(rem), focusElapsed: mmss(F.elapsed), dial,
+      focusAttrName: this.at(F.attr).name, focusGlyph: this.at(F.attr).glyph,
+      focusReward: `+${fPts} progress · +${fCr} credits · ${this.at(F.attr).name} +3`,
+      earnedPts: `+${Math.floor(fPts * F.elapsed / total)}`, earnedCr: `+${Math.floor(fCr * F.elapsed / total)}`,
+      focusPctText: `${Math.round(F.elapsed / total * 100)}%`,
+      durOpts: [15, 25, 45, 60, 90].map(m => ({ label:String(m), ...sel(F.mins === m), onTap: () => this.setState({ focus: { ...F, mins:m } }) })),
+      focusAttrOpts: this.ATTRS.map(a => ({ name:a.name, glyph:a.glyph, ...sel(F.attr === a.id), onTap: () => this.setState({ focus: { ...F, attr:a.id } }) })),
+      focusMinus: () => this.setState({ focus: { ...F, mins: Math.max(5, F.mins - 5) } }),
+      focusPlus: () => this.setState({ focus: { ...F, mins: Math.min(180, F.mins + 5) } }),
+      onFocusLabel: e => this.setState({ focus: { ...this.state.focus, label: e.target.value } }),
+      startFocus: () => this.startFocus(),
+      togglePause: () => this.setState({ focus: { ...F, paused: !F.paused } }),
+      endFocus: () => this.finishFocus(true),
+      pauseLabel: F.paused ? 'Resume' : 'Pause', liveDot, liveLabel: F.paused ? 'Paused' : 'Live',
+
+      attrList: this.ATTRS.map(a => ({ name:a.name, glyph:a.glyph, value: s.attrs[a.id], w: `${(s.attrs[a.id] / 200 * 100).toFixed(1)}%` })),
+      radar, rings: [0.25, 0.5, 0.75, 1].map(t => ({ pts: ring(t) })),
+      attrShape: s.attrView === 'shape', attrListView: s.attrView === 'list',
+      attrViewOpts: [['shape','Shape'],['list','List']].map(([id, label]) => ({ label, ...seg(s.attrView === id), onTap: () => this.setState({ attrView:id }) })),
+      rewardsV: s.rewards.map(r => { const can = p.credits >= r.cost; return { name:r.name, note:r.note, cost:f(r.cost), can, label: can ? f(r.cost) : `Need ${f(r.cost - p.credits)}`, bg: can ? 'var(--inv)' : 'transparent', ink: can ? 'var(--onInv)' : 'var(--ink3)', border: can ? 'var(--inv)' : 'var(--line2)', countText: r.count ? `Redeemed ${r.count}×` : 'Not yet redeemed', onTap: () => this.redeem(r.id) }; }),
+      momentsV: s.moments.slice(0, 5),
+      milestones: [
+        { name:'First week', note:'7 days in a row', got:true },
+        { name:'Level 10', note:'Reached in August', got:true },
+        { name:'30-day streak', note:`${Math.max(0, 30 - p.streak)} days to go`, got:p.streak >= 30 },
+        { name:'250 habits', note:`${Math.max(0, 250 - p.total)} to go`, got:p.total >= 250 },
+      ].map(m => ({ ...m, op: m.got ? 1 : 0.55, mark: m.got ? 'var(--inv)' : 'var(--line2)' })),
+      totalText: f(p.total),
+
+      modeOpts: [['system','System'],['dark','Dark'],['light','Light']].map(([id, label]) => ({ label, ...seg(s.themeMode === id), onTap: () => this.setState({ themeMode:id }) })),
+      alertOpts: ['Immediate','Digest'].map(id => ({ label:id, ...seg(S.alerts === id), onTap: () => this.setState({ settings: { ...S, alerts:id } }) })),
+      tg: { haptics: tg('haptics'), penLevel: tg('penLevel'), penAttr: tg('penAttr'), penCredits: tg('penCredits'), reminders: tg('reminders'), smart: tg('smart'), health: tg('health'), location: tg('location'), icloud: tg('icloud'), watch: tg('watch') },
+      iconOpts: [['graphite','Graphite','#141417','#F4F4F5'],['ivory','Ivory','#EDEDEB','#0E0E10'],['signal','Signal','var(--accent)','var(--onAccent)'],['outline','Outline','#0A0A0C','var(--accentInk)']].map(([id, label, bg, fg]) => ({ label, bg, fg, ring: S.icon === id ? 'var(--ink)' : 'transparent', onTap: () => this.setState({ settings: { ...S, icon:id } }) })),
+      previewLevel: () => { this.setState({ pendingLevel: { from: p.level, to: p.level + 1 } }); this.openOverlay('levelup'); },
+      previewReset: () => this.openOverlay('reset'),
+      replayOnboarding: () => this.go({ onboarding:true, obStep:0 }),
+
+      sheetOpen: s.sheet, sheetY: s.sheetIn ? '0%' : '104%', scrimOp: s.sheetIn ? 1 : 0, closeSheet: () => this.closeSheet(),
+      form: fm, isHabitForm: fm.kind === 'habit', isGoalForm: fm.kind === 'goal', isCustom: fm.kind === 'habit' && fm.mode === 'custom',
+      kindOpts: [['habit','Habit'],['goal','Goal']].map(([id, label]) => ({ label, ...seg(fm.kind === id), onTap: () => this.setForm({ kind:id }) })),
+      modeFormOpts: [['express','Express'],['custom','Custom']].map(([id, label]) => ({ label, ...seg(fm.mode === id), onTap: () => this.setForm({ mode:id }) })),
+      onFormTitle: e => this.setForm({ title: e.target.value }),
+      onGoalTarget: e => this.setForm({ goalTarget: e.target.value }),
+      starterOpts: this.STARTERS.map(o => ({ label:o.label, ...sel(fm.title === o.title), onTap: () => this.setForm({ title:o.title, attr:o.attr }) })),
+      formAttrOpts: this.ATTRS.map(a => ({ name:a.name, glyph:a.glyph, ...sel(fm.attr === a.id), onTap: () => this.setForm({ attr:a.id }) })),
+      effortOpts: efforts.map((e, i) => ({ label:e.label, sub:`+${e.pts}`, ...seg(fm.effort === i), onTap: () => this.setForm({ effort:i }) })),
+      dayOpts: ['S','M','T','W','T','F','S'].map((d, i) => ({ label:d, ...sel(fm.days[i]), onTap: () => { const days = [...fm.days]; days[i] = !days[i]; this.setForm({ days }); } })),
+      timeOpts: ['07:00','12:30','20:00'].map(t => ({ label:t, ...sel(fm.time === t), onTap: () => this.setForm({ time:t }) })),
+      trackOpts: [['Manual','Manual'],['Health','Apple Health'],['Location','Location'],['Timer','Timer']].map(([id, label]) => ({ label, ...sel(fm.track === id), onTap: () => this.setForm({ track:id }) })),
+      linkOpts: [{ id:null, title:'None' }, ...s.goals].map(g => ({ label: g.title, ...sel(fm.goal === g.id), onTap: () => this.setForm({ goal:g.id }) })),
+      goalTypeOpts: ['Savings','Weight','Steps','Sleep','Workouts','Custom'].map(t => ({ label:t, ...sel(fm.goalType === t), onTap: () => this.setForm({ goalType:t, goalAuto: ['Weight','Steps','Sleep','Workouts'].includes(t) }) })),
+      deadlineOpts: [30, 60, 90].map(d => ({ label:`${d} days`, ...sel(fm.goalDays === d), onTap: () => this.setForm({ goalDays:d }) })),
+      ftg: {
+        reminder: { bg: fm.reminder ? 'var(--accent)' : 'var(--chip)', x: fm.reminder ? '20px' : '0px', onTap: () => this.setForm({ reminder: !fm.reminder }) },
+        optional: { bg: fm.optional ? 'var(--accent)' : 'var(--chip)', x: fm.optional ? '20px' : '0px', onTap: () => this.setForm({ optional: !fm.optional }) },
+        goalAuto: { bg: fm.goalAuto ? 'var(--accent)' : 'var(--chip)', x: fm.goalAuto ? '20px' : '0px', onTap: () => this.setForm({ goalAuto: !fm.goalAuto }) },
+      },
+      hasReminder: fm.reminder,
+      formPreview: fm.kind === 'habit' ? `+${ef.pts} progress · ${fm.optional ? 'no credits' : `+${ef.cr} credits`} · ${this.at(fm.attr).name} +2` : `${fm.goalDays} days · ${fm.goalAuto ? 'Tracks itself from Apple Health' : 'You log progress'}`,
+      saveLabel: fm.kind === 'habit' ? 'Add habit' : 'Start goal', saveOp: fm.title.trim() ? 1 : 0.45,
+      saveForm: () => this.saveForm(),
+
+      ovComplete: s.overlay === 'complete', ovLevel: s.overlay === 'levelup', ovReset: s.overlay === 'reset',
+      ovOp: s.overlayIn ? 1 : 0, ovY: s.overlayIn ? 'translateY(0)' : 'translateY(40px)', ovScale: s.overlayIn ? 'scale(1)' : 'scale(0.96)',
+      last: { ...last, attrName: this.at(last.attr).name, ptsText:`+${last.pts}`, crText:`+${last.credits}`, gainText:`+${last.gain}`,
+        head: last.kind === 'focus' ? (last.early ? 'Ended early.' : 'Session complete.') : 'Done.',
+        note: last.kind === 'focus' ? (last.early ? `Partial credit for ${last.mins} minute${last.mins === 1 ? '' : 's'}. Time spent still counts.` : `${last.mins} minutes, start to finish.`) : (last.optional ? 'Optional, so no credits. Still counts toward your level.' : `${lastCoach[0]} ${lastCoach[1]}`),
+        hasGoal: !!last.goalNote, goalNote: last.goalNote || '' },
+      burst, levelPending: !!s.pendingLevel, continueLabel: s.overlay === 'complete' && s.pendingLevel ? 'Continue' : 'Close',
+      continueOverlay: () => this.continueOverlay(), undoLast: () => this.undoLast(), closeOverlay: () => { this.setState({ pendingLevel:null }); this.closeOverlay(); },
+      lvFrom: lv.from, lvTo: lv.to, lvTitle: this.titleFor(lv.to),
+      lvUnlocks: [
+        { k:'Title', v: this.titleFor(lv.to) === this.titleFor(lv.from) ? `${this.titleFor(lv.to)}, held` : this.titleFor(lv.to) },
+        { k:'Focus', v: '90-minute sessions' },
+        { k:'Rewards', v: 'One more reward slot' },
+        { k:'Next', v: `Level ${lv.to + 1} in 1,000 progress` },
+      ],
+      reset: {
+        level: S.penLevel ? `${p.level} → ${Math.max(1, p.level - 1)}` : `${p.level}, kept`,
+        credits: S.penCredits ? `${f(p.credits)} → ${f(Math.round(p.credits * 0.8))}` : `${f(p.credits)}, kept`,
+        attrs: S.penAttr ? '−2% each' : 'Kept',
+        momentum: `${p.momentum} → 40`,
+      },
+
+      onboarding: s.onboarding, ob: { s0: s.obStep === 0, s1: s.obStep === 1, s2: s.obStep === 2, s3: s.obStep === 3, num: String(s.obStep + 1), step: `0${s.obStep + 1}`, notFirst: s.obStep > 0 },
+      obBars: [0, 1, 2, 3].map(i => ({ bg: i <= s.obStep ? 'var(--ink)' : 'var(--line2)' })),
+      obNext: () => s.obStep < 3 ? this.setState({ obStep: s.obStep + 1 }) : (this.go({ onboarding:false, obStep:0, tab:'today', push:null }), setTimeout(() => this.showToast('Welcome in. Start small.'), 50)),
+      obBack: () => this.setState({ obStep: Math.max(0, s.obStep - 1) }),
+      obSkip: () => this.go({ onboarding:false, obStep:0 }),
+      obCta: ['Begin', 'Continue', `Keep these ${s.obPicks.length}`, 'Enter SIL'][s.obStep],
+      obAttrOpts: this.ATTRS.map(a => { const on = s.obAttrs.includes(a.id); return { name:a.name, glyph:a.glyph, note:{ body:'Movement, strength, recovery', mind:'Reading, learning, deep work', energy:'Sleep, water, food', spirit:'Calm, discipline, reflection' }[a.id], bg: on ? 'var(--inv)' : 'var(--card)', ink: on ? 'var(--onInv)' : 'var(--ink)', sub: on ? 'var(--onInv)' : 'var(--ink2)', border: on ? 'var(--inv)' : 'var(--line)', onTap: () => this.setState({ obAttrs: on ? s.obAttrs.filter(x => x !== a.id) : [...s.obAttrs, a.id] }) }; }),
+      obHabitOpts: this.OB_HABITS.map(h => { const on = s.obPicks.includes(h.id); return { title:h.title, note:h.note, glyph:this.at(h.attr).glyph, on, off: !on, ring: on ? 'var(--inv)' : 'var(--card2)', ink: on ? 'var(--onInv)' : 'var(--ink)', onTap: () => this.setState({ obPicks: on ? s.obPicks.filter(x => x !== h.id) : (s.obPicks.length >= 3 ? [...s.obPicks.slice(1), h.id] : [...s.obPicks, h.id]) }) }; }),
+      obPermOpts: [['health','Apple Health','Steps, sleep, water and workouts complete themselves.'],['location','Location','Gym and library habits check in when you arrive.'],['notif','Reminders','A nudge at the time you chose. Nothing else.'],['icloud','iCloud sync','Private to you, across your devices.']].map(([id, name, note]) => { const on = s.obPerms[id]; return { name, note, bg: on ? 'var(--accent)' : 'var(--chip)', x: on ? '20px' : '0px', onTap: () => this.setState({ obPerms: { ...s.obPerms, [id]: !on } }) }; }),
+
+      hasToast: !!s.toast, toast: s.toast || '',
+    };
+  }
+}
+</script>
+</body>
+</html>

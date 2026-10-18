@@ -2,8 +2,12 @@
 //  SystemTheme.swift
 //  SIL
 //
-//  [SYSTEM]: Visual identity initialized.
-//  Dark Mode exclusive. The shadows are your canvas.
+//  Legacy token table. The screens outside Glasswork were written against the
+//  old neon "System" palette; SIL 2.0 replaces it with the quiet language in
+//  `SILTheme.swift`. Every token below now forwards to its closest SIL
+//  equivalent, so those screens pick up the new surface without a rewrite.
+//
+//  New code should use `S` directly. This shim shrinks as screens are rebuilt.
 //
 
 import SwiftUI
@@ -12,129 +16,90 @@ import CoreText
 
 // MARK: - System Theme
 
-/// The visual identity of the System - Dark, sleek, powerful
+/// The visual identity of SIL — quiet, typographic, one accent.
 struct SystemTheme {
 
-    private static func adaptiveColor(light: String, dark: String) -> Color {
-        Color(
-            UIColor { traits in
-                UIColor(
-                    hex: traits.userInterfaceStyle == .dark ? dark : light
-                )
-            }
-        )
-    }
+    // MARK: - Primary Colors
+    //
+    // SIL has a single accent instead of a blue/purple/cyan family. The old
+    // names are kept so existing call sites compile; they all resolve to the
+    // accent or to ink.
 
-    // MARK: - Primary Colors (Solo Leveling Inspired)
+    /// The one accent. Primary actions, live state, selected chips.
+    static var primaryBlue: Color { S.accent }
+    /// Accent as text or a thin stroke.
+    static var primaryPurple: Color { S.accentInk }
+    static var secondaryPurple: Color { S.accentInk }
+    static var accentCyan: Color { S.accentInk }
 
-    /// Primary neon blue - The System's signature
-    static let primaryBlue = Color(hex: "4CC9F0")
+    /// Warnings read as a desaturated clay, never as alarm red.
+    static var warningOrange: Color { S.ink2 }
+    static var criticalRed: Color { S.warn }
 
-    /// Primary purple - Power and mystery
-    static let primaryPurple = Color(hex: "7B2CBF")
-
-    /// Secondary purple - Lighter accent
-    static let secondaryPurple = Color(hex: "9D4EDD")
-
-    /// Accent cyan - Highlights and glows
-    static let accentCyan = Color(hex: "00F5D4")
-
-    /// Warning orange - Penalties and alerts
-    static let warningOrange = Color(hex: "FF6B35")
-
-    /// Critical red - Damage and failures
-    static let criticalRed = Color(hex: "EF233C")
-
-    /// Success green - Completions and victories
-    static let successGreen = Color(hex: "06D6A0")
-
-    /// Gold - Currency and legendary items
-    static let goldColor = Color(hex: "FFD700")
+    /// Success and currency are not colours in SIL — they are just ink.
+    static var successGreen: Color { S.ink }
+    static var goldColor: Color { S.ink }
 
     // MARK: - Background Colors
 
-    /// Primary background - Deep void black
-    static let backgroundPrimary = adaptiveColor(light: "F4F6FA", dark: "0A0A0F")
-
-    /// Secondary background - Slightly lighter
-    static let backgroundSecondary = adaptiveColor(light: "FFFFFF", dark: "12121A")
-
-    /// Tertiary background - Card surfaces
-    static let backgroundTertiary = adaptiveColor(light: "E9EEF7", dark: "1A1A2E")
-
-    /// Elevated surface - Modals and overlays
-    static let backgroundElevated = adaptiveColor(light: "FFFFFF", dark: "252538")
+    static var backgroundPrimary: Color { S.bg }
+    static var backgroundSecondary: Color { S.card }
+    static var backgroundTertiary: Color { S.card2 }
+    static var backgroundElevated: Color { S.bg2 }
 
     // MARK: - Text Colors
 
-    /// Primary text - High contrast
-    static let textPrimary = adaptiveColor(light: "111420", dark: "FFFFFF")
+    static var textPrimary: Color { S.ink }
+    static var textSecondary: Color { S.ink2 }
+    static var textTertiary: Color { S.ink3 }
+    static var textSystem: Color { S.accentInk }
 
-    /// Secondary text - Muted
-    static let textSecondary = adaptiveColor(light: "495066", dark: "A0A0B0")
+    // MARK: - Attribute Colors
+    //
+    // SIL 2.0 merges the six stats into four attributes (Body, Mind, Energy,
+    // Spirit) and distinguishes them by glyph, not by hue.
 
-    /// Tertiary text - Very muted
-    static let textTertiary = adaptiveColor(light: "7A8198", dark: "606070")
-
-    /// System text - Blue tinted
-    static let textSystem = primaryBlue
-
-    // MARK: - Stat Colors
-
-    static let statStrength = Color(hex: "EF233C")      // Red - Power
-    static let statIntelligence = Color(hex: "4CC9F0")  // Blue - Mind
-    static let statAgility = Color(hex: "06D6A0")       // Green - Speed
-    static let statVitality = Color(hex: "FF6B35")      // Orange - Life
-    static let statWillpower = Color(hex: "9D4EDD")     // Purple - Will
-    static let statSpirit = Color(hex: "FFD700")        // Gold - Soul
+    static var statStrength: Color { S.ink }
+    static var statIntelligence: Color { S.ink }
+    static var statAgility: Color { S.ink }
+    static var statVitality: Color { S.ink }
+    static var statWillpower: Color { S.ink }
+    static var statSpirit: Color { S.ink }
 
     // MARK: - Gradients
+    //
+    // Flat ramps. SIL draws progress with ink on a hairline track, not with
+    // two-stop neon fills.
 
-    /// Primary gradient - Blue to Purple
-    static let primaryGradient = LinearGradient(
-        colors: [primaryBlue, primaryPurple],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+    static var primaryGradient: LinearGradient {
+        LinearGradient(colors: [S.accent, S.accent], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
 
-    /// System glow gradient
-    static let systemGlow = RadialGradient(
-        colors: [primaryBlue.opacity(0.3), Color.clear],
-        center: .center,
-        startRadius: 0,
-        endRadius: 150
-    )
+    static var systemGlow: RadialGradient {
+        RadialGradient(colors: [S.glow, .clear], center: .center, startRadius: 0, endRadius: 150)
+    }
 
-    /// XP bar gradient
-    static let xpGradient = LinearGradient(
-        colors: [primaryBlue, accentCyan],
-        startPoint: .leading,
-        endPoint: .trailing
-    )
+    static var xpGradient: LinearGradient {
+        LinearGradient(colors: [S.ink, S.ink], startPoint: .leading, endPoint: .trailing)
+    }
 
-    /// HP bar gradient (for bosses)
-    static let hpGradient = LinearGradient(
-        colors: [criticalRed, warningOrange],
-        startPoint: .leading,
-        endPoint: .trailing
-    )
+    static var hpGradient: LinearGradient {
+        LinearGradient(colors: [S.ink, S.ink], startPoint: .leading, endPoint: .trailing)
+    }
 
-    /// Gold gradient
-    static let goldGradient = LinearGradient(
-        colors: [Color(hex: "FFD700"), Color(hex: "FFA500")],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+    static var goldGradient: LinearGradient {
+        LinearGradient(colors: [S.ink, S.ink], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
 
     // MARK: - Shadows
 
-    static let glowShadow = Color.blue.opacity(0.5)
-    static let cardShadow = Color.black.opacity(0.3)
+    static var glowShadow: Color { S.glow }
+    static var cardShadow: Color { S.shadowColor }
 
     // MARK: - Border Colors
 
-    static let borderPrimary = primaryBlue.opacity(0.3)
-    static let borderSecondary = adaptiveColor(light: "D7DEEA", dark: "FFFFFF").opacity(0.25)
+    static var borderPrimary: Color { S.line2 }
+    static var borderSecondary: Color { S.line }
 
     // MARK: - Animation Durations
 
@@ -315,7 +280,7 @@ struct SystemTypography {
     // MARK: - Monospace (Stats & Numbers)
 
     static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        useCustomAppFont ? custom(size) : .system(size: size, weight: weight, design: .monospaced)
+        S.mono(size, weight)
     }
 
     static var statLarge: Font { mono(48, weight: .bold) }
@@ -332,7 +297,7 @@ struct SystemTypography {
     // MARK: - Sans-Serif (Content)
 
     static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        useCustomAppFont ? custom(size) : .system(size: size, weight: weight, design: .default)
+        S.text(size, weight)
     }
 
     static var titleLarge: Font { sans(34, weight: .bold) }
@@ -368,10 +333,12 @@ struct SystemSpacing {
 // MARK: - Corner Radius
 
 struct SystemRadius {
-    static let small: CGFloat = 4
-    static let medium: CGFloat = 8
-    static let large: CGFloat = 12
-    static let xlarge: CGFloat = 16
+    /// SIL corners are soft. The old 4/8/12/16 ramp read as a HUD; these
+    /// values match the prototype's inputs, tiles, cards and sheets.
+    static let small: CGFloat = 9
+    static let medium: CGFloat = 16
+    static let large: CGFloat = S.R.small
+    static let xlarge: CGFloat = S.R.card
     static let full: CGFloat = 999
 }
 

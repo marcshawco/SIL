@@ -460,7 +460,7 @@ final class AppIconManager: ObservableObject {
     private static let iconChangeRetryDelay: TimeInterval = 0.8
     private static let iconChangeSettleDelay: TimeInterval = 1.6
 
-    @Published private(set) var currentOption: AppIconOption = .signal
+    @Published private(set) var currentOption: AppIconOption = .ink
     @Published private(set) var isSupported: Bool = UIApplication.shared.supportsAlternateIcons
     @Published private(set) var hasLegacyIconOverride = false
     @Published private(set) var hasPendingIconChange = false
@@ -497,7 +497,7 @@ final class AppIconManager: ObservableObject {
     func refreshCurrentIcon() {
         isSupported = UIApplication.shared.supportsAlternateIcons
         guard isSupported else {
-            currentOption = .signal
+            currentOption = .ink
             hasLegacyIconOverride = false
             hasPendingIconChange = false
             pendingIconDisplayName = nil
@@ -563,7 +563,7 @@ final class AppIconManager: ObservableObject {
         )
         guard resolvedState.shouldNormalizeIconName else { return }
 
-        storedOption = .signal
+        storedOption = .ink
         UIApplication.shared.setAlternateIconName(nil) { [weak self] _ in
             DispatchQueue.main.async {
                 self?.refreshCurrentIcon()

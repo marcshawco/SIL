@@ -15,8 +15,9 @@ of the previous game-styled interface.
 |---|---|
 | Engine, data, services ported from GAMELIFE | Done |
 | Project renamed to `SIL` (targets, bundle IDs, schemes) | Done |
-| Design language rebuild (SIL Prototype) | In progress |
-| Icon + brand asset distribution | In progress |
+| Design tokens, type scale, accents (SIL Prototype) | Done |
+| Screen-by-screen rebuild (Today / Goals / Focus / You) | In progress |
+| Icon + brand asset distribution | Done |
 
 ## Project layout
 
@@ -42,9 +43,18 @@ sil-logo-pack/         Brand assets: mark, lockup, app icons, web, social
 
 ## Brand
 
-- Mark: "Three strokes" — S, I and L as rising bars, the last turning into an L
-- Colours: black `#0A0A0C`, white `#FFFFFF`
-- Type: Schibsted Grotesk 600 + Martian Mono 400
+- Mark: "Three strokes" — S, I and L as rising bars, the last turning into an L.
+  Drawn in-app as a vector by [`SILMark`](SIL/Design/SILMark.swift)
+- Ground: `#0A0A0C` dark / `#EDEDEB` light; ink `#F4F4F5` / `#0E0E10`
+- One accent, user-selectable: violet (default), orange, or mono
+- Type: Schibsted Grotesk 600 + Martian Mono 400. Those files are not bundled,
+  so the app falls back to SF Pro and SF Mono; `S.display/text/mono` pick the
+  real faces up automatically if they are ever added
+- App icons: Ink (primary), Paper, Violet, Ember — same mark, different ground
+
+Tokens live in [`SIL/Design/SILTheme.swift`](SIL/Design/SILTheme.swift) under the
+`S` namespace. `GW` and `SystemTheme` are compatibility shims that forward their
+old names to `S`; they shrink as screens are rebuilt.
 
 Full asset inventory and usage rules: [`sil-logo-pack/README.md`](sil-logo-pack/README.md)
 
@@ -63,4 +73,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.0 (build 6.0)
+6.1 (build 6.1)

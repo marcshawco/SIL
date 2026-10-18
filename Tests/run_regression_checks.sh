@@ -25,14 +25,13 @@ grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' "$ROOT/SILWidgets/PrivacyInfo
 APP_ICON_SUPPORT="$ROOT/SIL/Services/AppIconSupport.swift"
 APP_ICON_SETTINGS="$ROOT/SIL/Views/Settings/SettingsView.swift"
 APP_ICON_NAMES=(
-  AppIconPrismGold
-  AppIconPrismCrimson
-  AppIconPrismSolar
-  AppIconPrismVerdant
+  AppIconPaper
+  AppIconViolet
+  AppIconEmber
 )
 
 grep -q 'AppIconStateResolver.resolve' "$APP_ICON_SETTINGS" || fail "App icon manager should resolve state from the actual system icon"
-if grep -Fq 'currentOption = storedOption ?? .signal' "$APP_ICON_SETTINGS"; then
+if grep -Fq 'currentOption = storedOption ?? .ink' "$APP_ICON_SETTINGS"; then
   fail "App icon manager should not display stale stored selections when the system icon is default"
 fi
 for icon_name in "${APP_ICON_NAMES[@]}"; do
