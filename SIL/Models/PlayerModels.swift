@@ -491,8 +491,8 @@ enum AchievementCatalog {
     static let all: [AchievementDefinition] = [
         AchievementDefinition(
             id: "grind_streak_3",
-            title: "Momentum Initiated",
-            description: "Start the consistency engine.",
+            title: "First one down",
+            description: "You closed a habit.",
             requirementText: "Reach a 3-day streak.",
             category: .grind,
             rarity: .common,
@@ -502,19 +502,19 @@ enum AchievementCatalog {
         ),
         AchievementDefinition(
             id: "grind_streak_14",
-            title: "The Unbroken",
-            description: "Two weeks without breaking stride.",
+            title: "Two weeks",
+            description: "Fourteen days without breaking stride.",
             requirementText: "Reach a 14-day streak.",
             category: .grind,
             rarity: .rare,
             icon: "flame.circle.fill",
             targetValue: 14,
-            reward: AchievementReward(xp: 120, gold: 25, title: "The Unbroken")
+            reward: AchievementReward(xp: 120, gold: 25, title: "Two weeks")
         ),
         AchievementDefinition(
             id: "grind_streak_30",
-            title: "Discipline Engine",
-            description: "One full month of execution.",
+            title: "A full month",
+            description: "Thirty days of showing up.",
             requirementText: "Reach a 30-day streak.",
             category: .grind,
             rarity: .epic,
@@ -524,8 +524,8 @@ enum AchievementCatalog {
         ),
         AchievementDefinition(
             id: "arena_first_boss",
-            title: "First Blood",
-            description: "Your first boss has fallen.",
+            title: "First goal",
+            description: "You reached a goal you set.",
             requirementText: "Defeat 1 boss.",
             category: .arena,
             rarity: .common,
@@ -535,19 +535,19 @@ enum AchievementCatalog {
         ),
         AchievementDefinition(
             id: "arena_boss_10",
-            title: "Giant Slayer",
-            description: "Battle-tested against major goals.",
+            title: "Five goals",
+            description: "Long work, finished more than once.",
             requirementText: "Defeat 10 bosses.",
             category: .arena,
             rarity: .epic,
             icon: "crown.fill",
             targetValue: 10,
-            reward: AchievementReward(xp: 300, gold: 80, title: "Giant Slayer")
+            reward: AchievementReward(xp: 300, gold: 80, title: "Five goals")
         ),
         AchievementDefinition(
             id: "scholar_training_5",
-            title: "Focus Cadet",
-            description: "You entered deep work mode repeatedly.",
+            title: "Settling in",
+            description: "Focus sessions are becoming a habit.",
             requirementText: "Complete 5 training sessions.",
             category: .scholar,
             rarity: .common,
@@ -557,8 +557,8 @@ enum AchievementCatalog {
         ),
         AchievementDefinition(
             id: "scholar_training_25",
-            title: "Deep Work Adept",
-            description: "Sustained concentration forged.",
+            title: "Deep work",
+            description: "Long sessions, held to the end.",
             requirementText: "Complete 25 training sessions.",
             category: .scholar,
             rarity: .rare,
@@ -568,8 +568,8 @@ enum AchievementCatalog {
         ),
         AchievementDefinition(
             id: "vault_purchase_1",
-            title: "First Loot",
-            description: "You converted effort into reward.",
+            title: "First reward",
+            description: "You spent credits on something real.",
             requirementText: "Purchase 1 shop reward.",
             category: .vault,
             rarity: .common,
@@ -579,8 +579,8 @@ enum AchievementCatalog {
         ),
         AchievementDefinition(
             id: "vault_purchase_10",
-            title: "Quartermaster",
-            description: "You consistently reinvest your grind.",
+            title: "Paying yourself",
+            description: "You keep cashing the work in.",
             requirementText: "Purchase 10 shop rewards.",
             category: .vault,
             rarity: .rare,
@@ -590,8 +590,8 @@ enum AchievementCatalog {
         ),
         AchievementDefinition(
             id: "vault_spend_1000",
-            title: "Golden Circuit",
-            description: "Serious economy throughput.",
+            title: "Well earned",
+            description: "A serious run of credits banked.",
             requirementText: "Spend 1000 Gold in the shop.",
             category: .vault,
             rarity: .epic,
@@ -601,8 +601,8 @@ enum AchievementCatalog {
         ),
         AchievementDefinition(
             id: "quests_complete_25",
-            title: "Questline Initiated",
-            description: "First major milestone reached.",
+            title: "Underway",
+            description: "The first real milestone is behind you.",
             requirementText: "Complete 25 quests.",
             category: .grind,
             rarity: .common,
@@ -612,25 +612,25 @@ enum AchievementCatalog {
         ),
         AchievementDefinition(
             id: "quests_complete_100",
-            title: "System Veteran",
-            description: "Relentless completion pressure applied.",
+            title: "Long haul",
+            description: "Hundreds of habits closed.",
             requirementText: "Complete 100 quests.",
             category: .grind,
             rarity: .legendary,
             icon: "medal.fill",
             targetValue: 100,
-            reward: AchievementReward(xp: 500, gold: 120, title: "System Veteran")
+            reward: AchievementReward(xp: 500, gold: 120, title: "Long haul")
         ),
         AchievementDefinition(
             id: "legend_max_stat_100",
-            title: "Apex Build",
-            description: "A stat crossed elite threshold.",
+            title: "Specialist",
+            description: "One attribute well past the rest.",
             requirementText: "Reach 100 in any one stat.",
             category: .arena,
             rarity: .legendary,
             icon: "hexagon.fill",
             targetValue: 100,
-            reward: AchievementReward(xp: 600, gold: 150, title: "Apex Hunter")
+            reward: AchievementReward(xp: 600, gold: 150, title: "Specialist")
         )
     ]
 

@@ -436,7 +436,7 @@ struct QuestFormSheet: View {
         GWCard(paddingX: 14, paddingY: 12) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("DIFFICULTY")
+                    Text("EFFORT")
                         .font(GW.mono(9, weight: .medium))
                         .tracking(2)
                         .foregroundStyle(GW.mute)
@@ -481,7 +481,7 @@ struct QuestFormSheet: View {
         GWCard(paddingX: 14, paddingY: 12) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("TARGET STATS")
+                    Text("BUILDS")
                         .font(GW.mono(9, weight: .medium))
                         .tracking(2)
                         .foregroundStyle(GW.mute)
@@ -511,7 +511,7 @@ struct QuestFormSheet: View {
     private var customSubtasksCard: some View {
         GWCard(paddingX: 14, paddingY: 12) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("SUBTASKS")
+                Text("STEPS")
                     .font(GW.mono(9, weight: .medium))
                     .tracking(2)
                     .foregroundStyle(GW.mute)
@@ -785,11 +785,11 @@ struct QuestFormSheet: View {
 
     private var quickHeader: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("[ QUICK CAPTURE ]")
+            Text("QUICK ADD")
                 .font(GW.mono(10, weight: .medium))
                 .tracking(2.4)
                 .foregroundStyle(GW.cyan)
-            Text("Add it before it slips.")
+            Text("Get it down before it slips.")
                 .font(GW.display(24, weight: .semibold))
                 .foregroundStyle(GW.ink)
             Text("Name the habit, choose the effort, and SIL fills in sensible defaults.")
@@ -838,7 +838,7 @@ struct QuestFormSheet: View {
         GWCard(paddingX: 14, paddingY: 12) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("DIFFICULTY")
+                    Text("EFFORT")
                         .font(GW.mono(9, weight: .medium))
                         .tracking(2)
                         .foregroundStyle(GW.mute)

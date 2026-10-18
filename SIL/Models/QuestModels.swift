@@ -1057,7 +1057,7 @@ struct DefaultQuests {
         // STR - Strength
         DailyQuest(
             title: "1 Pushup",
-            description: "Just one. That's all the System asks.",
+            description: "Just one. That is the whole habit.",
             difficulty: .trivial,
             targetStats: [.strength],
             trackingType: .manual,
@@ -1066,7 +1066,7 @@ struct DefaultQuests {
         ),
         DailyQuest(
             title: "Walk 10,000 Steps",
-            description: "Move your vessel through the world.",
+            description: "Get out and walk.",
             difficulty: .normal,
             targetStats: [.strength, .vitality],
             trackingType: .healthKit,
@@ -1078,7 +1078,7 @@ struct DefaultQuests {
         // INT - Intelligence
         DailyQuest(
             title: "Read 1 Page",
-            description: "A single page. Knowledge compounds.",
+            description: "One page. It compounds.",
             difficulty: .trivial,
             targetStats: [.intelligence],
             trackingType: .manual,
@@ -1088,7 +1088,7 @@ struct DefaultQuests {
         // AGI - Agility
         DailyQuest(
             title: "1 Minute Stretch",
-            description: "Flexibility is freedom.",
+            description: "One minute, anywhere.",
             difficulty: .trivial,
             targetStats: [.agility],
             trackingType: .manual,
@@ -1099,7 +1099,7 @@ struct DefaultQuests {
         // VIT - Vitality
         DailyQuest(
             title: "Sleep 8 Hours",
-            description: "Rest is not weakness. It is regeneration.",
+            description: "Rest is part of the work.",
             difficulty: .normal,
             targetStats: [.vitality],
             trackingType: .healthKit,
@@ -1109,7 +1109,7 @@ struct DefaultQuests {
         ),
         DailyQuest(
             title: "Drink Water",
-            description: "Hydrate your vessel.",
+            description: "Keep the glass filled.",
             difficulty: .trivial,
             targetStats: [.vitality],
             trackingType: .manual,
@@ -1121,7 +1121,7 @@ struct DefaultQuests {
         // SPI - Spirit
         DailyQuest(
             title: "1 Minute Meditation",
-            description: "Silence the noise. Find your center.",
+            description: "One quiet minute.",
             difficulty: .trivial,
             targetStats: [.spirit],
             trackingType: .manual,
@@ -1130,7 +1130,7 @@ struct DefaultQuests {
         ),
         DailyQuest(
             title: "Write 1 Gratitude",
-            description: "Acknowledge the light in darkness.",
+            description: "One thing that went right.",
             difficulty: .trivial,
             targetStats: [.spirit],
             trackingType: .manual,
@@ -1139,20 +1139,23 @@ struct DefaultQuests {
         )
     ]
 
+    /// Catch-up tasks. These used to be punishments — a plank "of penance",
+    /// a post admitting failure to your followers, a fast. SIL does not shame
+    /// anyone into consistency, so they are small, private ways back in.
     static let penaltyQuests: [PenaltyQuest] = [
         PenaltyQuest(
-            title: "The Plank of Penance",
-            description: "Hold a plank for 4 minutes. Feel the burn of failure.",
+            title: "Ten minutes, moving",
+            description: "A walk counts. Just get the body going again.",
             penaltyType: .physical
         ),
         PenaltyQuest(
-            title: "Public Accountability",
-            description: "Post on social media: 'I failed my daily quests. Tomorrow I rise.'",
+            title: "Write down what got in the way",
+            description: "Two lines. Naming it is usually enough.",
             penaltyType: .social
         ),
         PenaltyQuest(
-            title: "The Fast",
-            description: "No snacks or treats today. Only essentials.",
+            title: "Pick one habit for tomorrow",
+            description: "Not all of them. One you know you will keep.",
             penaltyType: .restriction
         )
     ]
