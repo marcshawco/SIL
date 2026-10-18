@@ -43,8 +43,11 @@ grep -Fq 'TARGETED_DEVICE_FAMILY = "1,2";' "$PROJECT/project.pbxproj" || fail "A
 if grep -RInF 'UserDefaults(suiteName:' "$ROOT/SIL" "$ROOT/SILWidgets" >/dev/null; then
   fail "App/widget app-group bridge should use files instead of CFPrefs-backed suite defaults"
 fi
-grep -Fq 'if #available(iOS 18.0, *)' "$ROOT/SIL/Views/MainTabView.swift" || fail "Main tab view missing iOS 18 bottom navigation padding guard"
-grep -Fq 'safeAreaInset(edge: .bottom' "$ROOT/SIL/Views/MainTabView.swift" || fail "Main tab view missing bottom navigation safe-area padding"
+grep -Fq 'SILTabBar(selection:' "$ROOT/SIL/Views/MainTabView.swift" || fail "Main tab view should use the floating SIL tab bar"
+for silTab in today goals focus you; do
+  grep -Fq "case .$silTab:" "$ROOT/SIL/Views/MainTabView.swift" || fail "Main tab view missing the $silTab destination"
+done
+grep -Fq 'screenBottom: CGFloat = 128' "$ROOT/SIL/Design/SILTheme.swift" || fail "Screens must reserve bottom room for the floating tab bar"
 
 REMOVED_ENTITLEMENT='com.apple.developer.family-''controls'
 if grep -q "$REMOVED_ENTITLEMENT" "$ROOT/SIL/SIL.entitlements"; then
@@ -76,8 +79,8 @@ fi
 grep -q 'FirstLaunchSetupView' "$ROOT/SIL/SILApp.swift" || fail "First launch setup view missing"
 grep -Fq 'loadDailyQuests() ?? []' "$ROOT/SIL/Services/GameEngine.swift" || fail "GameEngine should not seed default quests"
 grep -q 'case \.location: return "Location"' "$ROOT/SIL/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing Address tracking segment"
-grep -q 'Text(\"Schedule\")' "$ROOT/SIL/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing unified schedule section"
-grep -q 'Toggle(\"Enable Reminder\"' "$ROOT/SIL/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing reminder toggle"
+grep -q 'customScheduleCard' "$ROOT/SIL/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing unified schedule section"
+grep -q 'Toggle(isOn: $reminderEnabled)' "$ROOT/SIL/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing reminder toggle"
 grep -q 'case workoutCount = \"workoutCount\"' "$ROOT/SIL/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing workout-count HealthKit option"
 grep -q 'healthKitDataDidUpdate' "$ROOT/SIL/Services/HealthKitManager.swift" || fail "HealthKit update notification missing"
 grep -q 'healthKitDataDidUpdate' "$ROOT/SIL/Services/GameEngine.swift" || fail "GameEngine should react to HealthKit updates"

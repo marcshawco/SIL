@@ -2,15 +2,18 @@
 //  MainTabView.swift
 //  SIL
 //
-//  [SYSTEM]: Navigation matrix initialized.
-//  Your journey through the realms begins here.
+//  The SIL 2.0 shell: four destinations — Today, Goals, Focus, You — behind a
+//  floating tab bar, with a compose button beside it.
+//
+//  The old five-tab RPG layout (Status / Quests / Training / Bosses / Shop)
+//  collapses into this. Habits and Rewards are no longer tabs; they are opened
+//  from Today and You, which is what the prototype does.
 //
 
 import SwiftUI
 
 // MARK: - Main Tab View
 
-/// The root navigation structure - 5 distinct tabs for the Hunter's journey
 struct MainTabView: View {
 
     // MARK: - Properties
@@ -18,86 +21,47 @@ struct MainTabView: View {
     @EnvironmentObject var gameEngine: GameEngine
     @EnvironmentObject var deepLinkManager: DeepLinkManager
     @AppStorage("defaultTab") private var defaultTab: Int = 0
-    @State private var selectedTab: Int
 
-    // MARK: - System Message State
-
+    @State private var selectedTab: SILTab
+    @State private var pushedScreen: SILPushedScreen?
     @State private var currentSystemMessage: SystemMessage?
-
-    private var bottomNavigationExtraPadding: CGFloat {
-        if #available(iOS 18.0, *) {
-            return 8
-        }
-        return 0
-    }
 
     // MARK: - Initialization
 
     init() {
-        let savedDefault = SettingsManager.shared.defaultTab
-        let normalizedDefault = GameTab(rawValue: savedDefault)?.rawValue ?? GameTab.status.rawValue
-        _selectedTab = State(initialValue: normalizedDefault)
+        let saved = SettingsManager.shared.defaultTab
+        _selectedTab = State(initialValue: SILTab.from(tabIndex: saved))
     }
 
     // MARK: - Body
 
     var body: some View {
-        ZStack(alignment: .top) {
-            TabView(selection: $selectedTab) {
-                // Tab 0: Status (Player Profile & Stats) — Glasswork direction
-                GlassworkStatusView()
-                    .tabItem {
-                        Label(LocalizedStringKey("Status"), systemImage: "person.fill")
-                    }
-                    .tag(0)
+        ZStack(alignment: .bottom) {
+            S.bg.ignoresSafeArea()
 
-                // Tab 1: Quests (Daily/Micro Tasks) — Glasswork direction
-                GlassworkQuestsView()
-                    .tabItem {
-                        Label(LocalizedStringKey("Quests"), systemImage: "list.bullet.rectangle")
-                    }
-                    .tag(1)
+            tabContent
+                .transition(.opacity)
 
-                // Tab 2: Training (Focus Timer - formerly Dungeon) — Glasswork direction
-                GlassworkTrainingView()
-                    .tabItem {
-                        Label(LocalizedStringKey("Training"), systemImage: "timer")
-                    }
-                    .tag(2)
-
-                // Tab 3: Bosses (Projects & Long-term Goals) — Glasswork direction
-                GlassworkBossesView()
-                    .tabItem {
-                        Label(LocalizedStringKey("Bosses"), systemImage: "bolt.shield.fill")
-                    }
-                    .tag(3)
-
-                // Tab 4: Shop (Rewards Marketplace) — Glasswork direction
-                GlassworkShopView()
-                    .tabItem {
-                        Label(LocalizedStringKey("Shop"), systemImage: "bag.fill")
-                    }
-                    .tag(4)
+            SILTabBar(selection: $selectedTab) {
+                pushedScreen = .compose
             }
-            .tint(GW.cyan)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if bottomNavigationExtraPadding > 0 {
-                    Color.clear
-                        .frame(height: bottomNavigationExtraPadding)
-                        .accessibilityHidden(true)
-                }
-            }
+            .padding(.bottom, 10)
 
-            // System Message Banner Overlay
             if let message = currentSystemMessage {
-                SystemMessageBanner(message: message) {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        currentSystemMessage = nil
+                VStack {
+                    SystemMessageBanner(message: message) {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            currentSystemMessage = nil
+                        }
                     }
+                    Spacer()
                 }
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(100)
             }
+        }
+        .sheet(item: $pushedScreen) { screen in
+            pushedView(for: screen)
         }
         .onReceive(NotificationCenter.default.publisher(for: .showSystemMessage)) { notification in
             if let message = notification.object as? SystemMessage {
@@ -107,21 +71,18 @@ struct MainTabView: View {
             }
         }
         .onAppear {
-            AnalyticsManager.shared.trackScreenView(GameTab(rawValue: selectedTab)?.title ?? "unknown_tab")
-            AnalyticsManager.shared.trackFeature("tab_selected_\(GameTab(rawValue: selectedTab)?.title ?? "unknown")")
+            track(selectedTab)
         }
         .onChange(of: defaultTab) { _, newValue in
-            selectedTab = newValue
+            selectedTab = SILTab.from(tabIndex: newValue)
         }
         .onChange(of: selectedTab) { _, newValue in
             HapticManager.shared.selection()
-            let tabName = GameTab(rawValue: newValue)?.title ?? "unknown"
-            AnalyticsManager.shared.trackScreenView(tabName)
-            AnalyticsManager.shared.trackFeature("tab_selected_\(tabName)")
+            track(newValue)
         }
         .onChange(of: deepLinkManager.pendingLink) { _, link in
             guard let link else { return }
-            selectedTab = link.route.tabIndex
+            apply(link.route)
         }
         .sheet(item: $gameEngine.deathPenaltySummary) { summary in
             DeathPenaltySummaryView(summary: summary)
@@ -135,35 +96,87 @@ struct MainTabView: View {
             }
         }
     }
-}
 
-// MARK: - Tab Enum
+    // MARK: - Tabs
 
-/// The five pillars of the Hunter's interface
-enum GameTab: Int, CaseIterable {
-    case status = 0
-    case quests = 1
-    case training = 2
-    case bosses = 3
-    case shop = 4
-
-    var title: String {
-        switch self {
-        case .status: return "Status"
-        case .quests: return "Quests"
-        case .training: return "Training"
-        case .bosses: return "Bosses"
-        case .shop: return "Shop"
+    @ViewBuilder private var tabContent: some View {
+        switch selectedTab {
+        case .today:
+            SILTodayView(
+                onOpenHabits: { pushedScreen = .habits },
+                onOpenYou: { selectedTab = .you }
+            )
+        case .goals:
+            GlassworkBossesView()
+        case .focus:
+            GlassworkTrainingView()
+        case .you:
+            GlassworkStatusView()
         }
     }
 
-    var icon: String {
+    @ViewBuilder private func pushedView(for screen: SILPushedScreen) -> some View {
+        switch screen {
+        case .habits:
+            GlassworkQuestsView()
+        case .rewards:
+            GlassworkShopView()
+        case .compose:
+            // The compose button creates a habit; goals are created from the
+            // Goals tab, which has its own flow.
+            GlassworkQuestsView()
+        }
+    }
+
+    // MARK: - Routing
+
+    private func apply(_ route: AppDeepLinkRoute) {
+        switch route {
+        case .status:   selectedTab = .you
+        case .training: selectedTab = .focus
+        case .bosses:   selectedTab = .goals
+        case .quests:   selectedTab = .today; pushedScreen = .habits
+        case .shop:     selectedTab = .you;   pushedScreen = .rewards
+        }
+    }
+
+    private func track(_ tab: SILTab) {
+        AnalyticsManager.shared.trackScreenView(tab.title)
+        AnalyticsManager.shared.trackFeature("tab_selected_\(tab.title)")
+    }
+}
+
+// MARK: - Pushed screens
+
+/// Screens reachable from a tab rather than being tabs themselves.
+enum SILPushedScreen: String, Identifiable {
+    case habits, rewards, compose
+
+    var id: String { rawValue }
+}
+
+// MARK: - Tab storage
+
+extension SILTab {
+    /// `defaultTab` and the deep-link routes still store the old five-tab
+    /// indices. Map them onto the four destinations so saved preferences and
+    /// existing links keep working.
+    static func from(tabIndex index: Int) -> SILTab {
+        switch index {
+        case 1: return .today   // Quests -> Today, which opens Habits
+        case 2: return .focus   // Training
+        case 3: return .goals   // Bosses
+        case 4: return .you     // Shop -> You, which holds Rewards
+        default: return .today  // Status
+        }
+    }
+
+    var tabIndex: Int {
         switch self {
-        case .status: return "person.fill"
-        case .quests: return "list.bullet.rectangle"
-        case .training: return "timer"
-        case .bosses: return "bolt.shield.fill"
-        case .shop: return "bag.fill"
+        case .today: return 1
+        case .focus: return 2
+        case .goals: return 3
+        case .you:   return 0
         }
     }
 }
@@ -173,6 +186,29 @@ enum GameTab: Int, CaseIterable {
 extension Notification.Name {
     static let showSystemMessage = Notification.Name("showSystemMessage")
 }
+
+// MARK: - Launch tab
+
+/// Backs the "Open App To" picker in Settings. Its raw values are the old
+/// five-tab indices, which `defaultTab` already stores on disk, so existing
+/// preferences survive the move to four destinations.
+enum GameTab: Int, CaseIterable, Identifiable {
+    case today = 1
+    case goals = 3
+    case focus = 2
+    case you = 0
+
+    var id: Int { rawValue }
+
+    var tab: SILTab {
+        SILTab.from(tabIndex: rawValue)
+    }
+
+    var title: String { tab.title }
+
+    var icon: String { tab.symbol }
+}
+
 
 struct DeathPenaltySummaryView: View {
     let summary: DeathPenaltySummary

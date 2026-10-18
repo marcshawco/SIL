@@ -16,7 +16,9 @@ of the previous game-styled interface.
 | Engine, data, services ported from GAMELIFE | Done |
 | Project renamed to `SIL` (targets, bundle IDs, schemes) | Done |
 | Design tokens, type scale, accents (SIL Prototype) | Done |
-| Screen-by-screen rebuild (Today / Goals / Focus / You) | In progress |
+| Component library (`SILComponents`) | Done |
+| Four-tab shell + Today screen | Done |
+| Goals / Focus / You screens rebuilt | In progress |
 | Icon + brand asset distribution | Done |
 
 ## Project layout
@@ -34,6 +36,38 @@ SILWatchExtension/     watchOS views
 Tests/                 Regression checks and logic tests
 sil-logo-pack/         Brand assets: mark, lockup, app icons, web, social
 ```
+
+## Vocabulary
+
+SIL 2.0 drops the RPG framing. The engine keeps its own names; the screens read
+through [`SILVocabulary.swift`](SIL/Design/SILVocabulary.swift):
+
+| Engine | Product |
+|---|---|
+| Quests | Habits |
+| Bosses | Goals |
+| Gold | Credits |
+| XP | Progress |
+| HP | Momentum |
+| Shop | Rewards |
+| Death penalty | Recalibration |
+
+The six stats collapse into four attributes, told apart by glyph rather than
+hue: **Body** (strength + agility), **Mind** (intelligence), **Energy**
+(vitality), **Spirit** (spirit + willpower). That merge is a view concern —
+`Player.stats` still stores all six, so no data migration is needed.
+
+## Navigation
+
+Four destinations behind a floating tab bar, with a compose button beside it:
+
+- **Today** — momentum, level, the dot calendar, what's left, next up
+- **Goals** — the long ones, weeks not minutes
+- **Focus** — the timer
+- **You** — attributes, consistency, rewards, moments, milestones
+
+Habits and Rewards are opened from Today and You rather than being tabs. Old
+five-tab deep links and the saved "Open App To" preference still resolve.
 
 ## Bundle identifiers
 
@@ -73,4 +107,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.1 (build 6.1)
+6.2 (build 6.2)
