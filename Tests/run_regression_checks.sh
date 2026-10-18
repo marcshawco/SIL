@@ -71,6 +71,15 @@ grep -q 'hasLocationBackgroundMode' "$ROOT/SIL/Services/LocationManager.swift" |
 grep -q 'requestWhenInUseAuthorization()' "$ROOT/SIL/Services/LocationManager.swift" || fail "Location manager not using requestWhenInUseAuthorization"
 grep -q 'requestAlwaysAuthorization()' "$ROOT/SIL/Services/LocationManager.swift" || fail "Location manager not escalating to Always authorization"
 
+for face in SchibstedGrotesk-Regular SchibstedGrotesk-Medium SchibstedGrotesk-SemiBold \
+            SchibstedGrotesk-Bold MartianMono-Light MartianMono-Regular MartianMono-Medium; do
+  [[ -f "$ROOT/SIL/Resources/Fonts/$face.ttf" ]] || fail "Missing bundled font $face.ttf"
+  grep -Fq "$face.ttf" "$ROOT/SIL/Info.plist" || fail "Font $face.ttf not registered in UIAppFonts"
+done
+for licence in OFL-SchibstedGrotesk.txt OFL-MartianMono.txt; do
+  [[ -f "$ROOT/SIL/Resources/Fonts/$licence" ]] || fail "Missing font licence $licence"
+done
+
 grep -q 'SILOnboardingView' "$ROOT/SIL/SILApp.swift" || fail "Onboarding flow missing from the root view"
 grep -Fq 'loadDailyQuests() ?? []' "$ROOT/SIL/Services/GameEngine.swift" || fail "GameEngine should not seed default quests"
 grep -q 'case \.location: return "Location"' "$ROOT/SIL/Views/Quests/QuestFormSheet.swift" || fail "Quest form missing Address tracking segment"

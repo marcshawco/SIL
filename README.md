@@ -97,10 +97,13 @@ engine honours all three.
   Drawn in-app as a vector by [`SILMark`](SIL/Design/SILMark.swift)
 - Ground: `#0A0A0C` dark / `#EDEDEB` light; ink `#F4F4F5` / `#0E0E10`
 - One accent, user-selectable: violet (default), orange, or mono
-- Type: Schibsted Grotesk 600 + Martian Mono 400. Those files are not bundled,
-  so the app falls back to SF Pro and SF Mono; `S.display/text/mono` pick the
-  real faces up automatically if they are ever added. The old bundled "Good
-  Times" display face and its SIL FONT switch are gone
+- Type: Schibsted Grotesk (text) + Martian Mono (labels), bundled under
+  [`SIL/Resources/Fonts`](SIL/Resources/Fonts) with their OFL licences. Both
+  ship as static instances cut from the variable originals at the weights SIL
+  uses — SwiftUI's `.weight()` does not drive a variable axis, so one variable
+  file would have meant synthetic bolding. `S.display/text/mono` resolve the
+  face per weight and fall back to the system face if registration fails. The
+  old bundled "Good Times" display face and its SIL FONT switch are gone
 - App icons: Ink (primary), Paper, Violet, Ember — same mark, different ground
 
 Tokens live in [`SIL/Design/SILTheme.swift`](SIL/Design/SILTheme.swift) under the
@@ -114,8 +117,11 @@ redrawn on SIL surfaces, until the habit editor is rebuilt.
   The string keys were renamed to SIL's vocabulary and the existing
   translations carried across, so nothing is missing at runtime, but the
   non-English copy says "Quest" and "Dungeon" and needs a human pass.
-- Schibsted Grotesk and Martian Mono are not bundled; type falls back to
-  SF Pro and SF Mono.
+- Leaving the app during a focus session still abandons it with a penalty,
+  which sits awkwardly against the running screen's "ending early keeps
+  partial credit". Kept from the GAMELIFE engine pending a decision.
+- The widgets and the watch app are restyled and build, but neither has been
+  checked on a screen.
 
 Full asset inventory and usage rules: [`sil-logo-pack/README.md`](sil-logo-pack/README.md)
 
@@ -134,4 +140,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.11 (build 6.11)
+6.12 (build 6.12)

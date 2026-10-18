@@ -158,6 +158,16 @@
 	<string>SIL uses your location to support location-based quests and visit tracking.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>SIL uses your location while the app is open to support location-based quests.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>SchibstedGrotesk-Regular.ttf</string>
+		<string>SchibstedGrotesk-Medium.ttf</string>
+		<string>SchibstedGrotesk-SemiBold.ttf</string>
+		<string>SchibstedGrotesk-Bold.ttf</string>
+		<string>MartianMono-Light.ttf</string>
+		<string>MartianMono-Regular.ttf</string>
+		<string>MartianMono-Medium.ttf</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

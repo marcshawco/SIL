@@ -234,37 +234,64 @@ enum S {
 
     // MARK: Type
     //
-    // The prototype sets Schibsted Grotesk for text and Martian Mono for
-    // labels. Those files are not bundled, so each role falls back to the
-    // closest system face: SF Pro (rounded-free, tight tracking) for text and
-    // SF Mono for labels. `register()` picks the real faces up automatically
-    // if they are ever added to the bundle.
+    // Schibsted Grotesk for text, Martian Mono for labels — the two faces the
+    // prototype specifies, bundled as static instances cut from the variable
+    // originals at the weights SIL actually uses. Static masters rather than
+    // one variable file because SwiftUI's `.weight()` does not drive a
+    // variable axis; it would synthesise the heavier weights instead, and
+    // synthetic bolding on a grotesk reads badly at display sizes.
+    //
+    // Each role resolves the face for the weight it is given and falls back to
+    // the matching system face if a font failed to register.
 
-    private static let sansName = "SchibstedGrotesk-Regular"
-    private static let monoName = "MartianMono-Regular"
+    private enum Face {
+        static func sans(_ weight: Font.Weight) -> String {
+            switch weight {
+            case .bold, .heavy, .black:     return "SchibstedGrotesk-Bold"
+            case .semibold:                 return "SchibstedGrotesk-SemiBold"
+            case .medium:                   return "SchibstedGrotesk-Medium"
+            default:                        return "SchibstedGrotesk-Regular"
+            }
+        }
 
-    private static var hasSans: Bool { UIFont(name: sansName, size: 12) != nil }
-    private static var hasMono: Bool { UIFont(name: monoName, size: 12) != nil }
+        static func mono(_ weight: Font.Weight) -> String {
+            switch weight {
+            case .medium, .semibold, .bold, .heavy, .black:
+                return "MartianMono-Medium"
+            case .ultraLight, .thin, .light:
+                return "MartianMono-Light"
+            default:
+                return "MartianMono-Regular"
+            }
+        }
+
+        static func isRegistered(_ name: String) -> Bool {
+            UIFont(name: name, size: 12) != nil
+        }
+    }
 
     /// Display numerals and screen titles. Tight, heavy, never uppercase.
     static func display(_ size: CGFloat, _ weight: Font.Weight = .semibold) -> Font {
-        hasSans
-            ? .custom(sansName, size: size).weight(weight)
-            : .system(size: size, weight: weight, design: .default)
+        let name = Face.sans(weight)
+        guard Face.isRegistered(name) else {
+            return .system(size: size, weight: weight, design: .default)
+        }
+        return .custom(name, size: size)
     }
 
     /// Body and control text.
     static func text(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        hasSans
-            ? .custom(sansName, size: size).weight(weight)
-            : .system(size: size, weight: weight, design: .default)
+        display(size, weight)
     }
 
-    /// Eyebrows, captions and data labels. Always paired with `.monoTracking()`.
+    /// Eyebrows, captions and data labels. Pair with `silEyebrow` or `silData`
+    /// for the tracking.
     static func mono(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        hasMono
-            ? .custom(monoName, size: size).weight(weight)
-            : .system(size: size, weight: weight, design: .monospaced)
+        let name = Face.mono(weight)
+        guard Face.isRegistered(name) else {
+            return .system(size: size, weight: weight, design: .monospaced)
+        }
+        return .custom(name, size: size)
     }
 
     /// The letter-spacing the prototype applies to its display sizes.
