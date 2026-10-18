@@ -91,7 +91,7 @@ class GameEngine: ObservableObject {
 
     private init() {
         // Load player or create new
-        self.player = PlayerDataManager.shared.loadPlayer() ?? Player(name: "Hunter")
+        self.player = PlayerDataManager.shared.loadPlayer() ?? Player(name: "You")
 
         // Load saved quests (fresh installs start with no defaults)
         self.dailyQuests = QuestDataManager.shared.loadDailyQuests() ?? []
@@ -521,7 +521,7 @@ class GameEngine: ObservableObject {
 
     func startFreshProfile(named name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        player = Player(name: trimmed.isEmpty ? "Hunter" : trimmed)
+        player = Player(name: trimmed.isEmpty ? "You" : trimmed)
         dailyQuests = []
         activeBossFights = []
         activeDungeon = nil

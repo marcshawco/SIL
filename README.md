@@ -134,4 +134,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.8 (build 6.8)
+6.9 (build 6.9)

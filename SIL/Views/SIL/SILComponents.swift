@@ -380,7 +380,9 @@ struct SILMeterBars: View {
             ForEach(Array(values.enumerated()), id: \.offset) { _, value in
                 RoundedRectangle(cornerRadius: 1)
                     .fill(S.ink.opacity(0.25 + 0.75 * max(0, min(1, value))))
-                    .frame(height: max(2, height * max(0.05, min(1, value))))
+                    // A floor of 3pt so an empty history reads as a row of
+                    // ticks rather than a dashed rule.
+                    .frame(height: max(3, height * max(0.05, min(1, value))))
             }
         }
         .frame(height: height, alignment: .bottom)
@@ -647,12 +649,15 @@ struct SILTabBar: View {
                             }
                         }
                         .foregroundStyle(on ? S.onInv : S.ink2)
-                        .frame(maxWidth: .infinity)
+                        // The selected pill hugs its icon and label; the rest
+                        // share what is left evenly.
+                        .padding(.horizontal, on ? 18 : 0)
+                        .frame(maxWidth: on ? nil : .infinity)
                         .frame(height: 52)
                         .background(Capsule().fill(on ? S.inv : .clear))
                     }
                     .buttonStyle(.plain)
-                    .layoutPriority(on ? 2 : 1)
+                    .fixedSize(horizontal: on, vertical: false)
                 }
             }
             .padding(6)

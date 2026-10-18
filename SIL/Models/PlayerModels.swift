@@ -236,7 +236,7 @@ class Player: Codable {
         return min(1.0, max(0.0, Double(currentHP) / Double(maxHP)))
     }
 
-    init(name: String = "Hunter", originStory: String = "") {
+    init(name: String = "You", originStory: String = "") {
         self.id = UUID()
         self.name = name
         self.title = "Starting out"

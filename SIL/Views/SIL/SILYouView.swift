@@ -143,7 +143,7 @@ struct SILYouView: View {
                         selection: $showsRadar,
                         height: 30
                     )
-                    .fixedSize()
+                    .frame(width: 128)
                 }
 
                 if showsRadar {

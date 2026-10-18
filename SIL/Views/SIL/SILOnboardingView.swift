@@ -43,7 +43,8 @@ struct SILOnboardingView: View {
                         default: permissionsStep
                         }
                     }
-                    .padding(.vertical, 28)
+                    .padding(.top, 28)
+                    .padding(.bottom, 24)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .scrollIndicators(.hidden)
@@ -67,7 +68,7 @@ struct SILOnboardingView: View {
                         .frame(height: 2)
                 }
             }
-            Button("Skip") { finish() }
+            Button("Skip") { skip() }
                 .font(S.text(15))
                 .foregroundStyle(S.ink2)
                 .buttonStyle(.plain)
@@ -308,6 +309,13 @@ struct SILOnboardingView: View {
     }
 
     // MARK: - Finish
+
+    /// Skipping should leave nothing behind. The habits and permissions are
+    /// only written when someone actually walks the steps.
+    private func skip() {
+        AnalyticsManager.shared.trackFeature("onboarding_skipped")
+        onFinish()
+    }
 
     private func finish() {
         let selected = starters.filter { picks.contains($0.id) }

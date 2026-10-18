@@ -46,7 +46,7 @@ enum PlayerClassTitle {
         let t = tier(forLevel: level)
 
         guard let top = ranked.first, top.value > 0 else {
-            return "Wanderer" // brand-new hunter, no stats trained yet
+            return "Just getting started" // nothing recorded yet
         }
 
         let second: RankedStat? = ranked.count > 1 ? ranked[1] : nil

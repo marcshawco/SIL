@@ -990,10 +990,10 @@ struct LootBox: Codable, Identifiable {
     }
 
     static func generateSoldierName() -> String {
-        let prefixes = ["Iron", "Shadow", "Dark", "Storm", "Frost", "Flame", "Steel", "Night"]
-        let suffixes = ["Fang", "Claw", "Knight", "Guard", "Warden", "Sentinel", "Warrior", "Hunter"]
-        let prefix = prefixes.randomElement() ?? "Shadow"
-        let suffix = suffixes.randomElement() ?? "Hunter"
+        let prefixes = ["Early", "Quiet", "Steady", "Long", "Clear", "Plain", "First", "Late"]
+        let suffixes = ["Morning", "Hour", "Mile", "Run", "Stretch", "Week", "Start", "Night"]
+        let prefix = prefixes.randomElement() ?? "Quiet"
+        let suffix = suffixes.randomElement() ?? "Hour"
         return "\(prefix) \(suffix)"
     }
 }
