@@ -27,6 +27,12 @@ class TrainingManager: ObservableObject {
     @Published var elapsedSeconds: Int = 0
     @Published var totalSeconds: Int = 0
     @Published var sessionTitle: String = "Training Session"
+    /// Whether a running session is currently held. The Focus screen reads
+    /// this to label its pause control and dim the dial.
+    @Published private(set) var isPaused: Bool = false
+    /// Which of the four SIL attributes this session builds. Stored as the
+    /// engine stat so rewards stay compatible.
+    @Published var focusStat: StatType = .intelligence
 
     // MARK: - Private Properties
 
@@ -95,6 +101,7 @@ class TrainingManager: ObservableObject {
         totalSeconds = minutes * 60
         elapsedSeconds = 0
         isActive = true
+        isPaused = false
         focusModeEnabled = true
         AnalyticsManager.shared.trackFeature("training_session_started")
         AnalyticsManager.shared.trackFeature("training_duration_\(minutes)")
@@ -145,8 +152,7 @@ class TrainingManager: ObservableObject {
         _ = engine.awardXP(xp)
         engine.player.gold += gold
         engine.player.dungeonsClearedCount += 1
-        engine.awardStatXP(.intelligence, amount: 15)
-        engine.awardStatXP(.willpower, amount: 15)
+        engine.awardStatXP(focusStat, amount: 20)
         engine.recordExternalActivity(
             type: .questCompleted,
             title: sessionTitle,
@@ -163,6 +169,7 @@ class TrainingManager: ObservableObject {
 
         // Reset state
         isActive = false
+        isPaused = false
         focusModeEnabled = false
     }
 
@@ -189,6 +196,7 @@ class TrainingManager: ObservableObject {
 
         // Reset state
         isActive = false
+        isPaused = false
         focusModeEnabled = false
         elapsedSeconds = 0
         totalSeconds = 0
@@ -211,13 +219,16 @@ class TrainingManager: ObservableObject {
 
     /// Pause the session (for emergencies)
     func pause() {
+        guard isActive else { return }
         timer?.invalidate()
         timer = nil
+        isPaused = true
     }
 
     /// Resume a paused session
     func resume() {
         guard isActive && timer == nil else { return }
+        isPaused = false
 
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             guard let self = self else { return }
@@ -233,6 +244,7 @@ class TrainingManager: ObservableObject {
         timer?.invalidate()
         timer = nil
         isActive = false
+        isPaused = false
         focusModeEnabled = false
     }
 }

@@ -18,7 +18,8 @@ of the previous game-styled interface.
 | Design tokens, type scale, accents (SIL Prototype) | Done |
 | Component library (`SILComponents`) | Done |
 | Four-tab shell + Today screen | Done |
-| Goals / Focus / You screens rebuilt | In progress |
+| Goals / Focus / You screens rebuilt | Done |
+| Habits, Settings, onboarding, overlays, widgets | In progress |
 | Icon + brand asset distribution | Done |
 
 ## Project layout
@@ -62,9 +63,11 @@ hue: **Body** (strength + agility), **Mind** (intelligence), **Energy**
 Four destinations behind a floating tab bar, with a compose button beside it:
 
 - **Today** — momentum, level, the dot calendar, what's left, next up
-- **Goals** — the long ones, weeks not minutes
-- **Focus** — the timer
-- **You** — attributes, consistency, rewards, moments, milestones
+- **Goals** — one number, a tick grid, a sparkline and an honest pace. A goal
+  is a measurement, not an enemy with a health bar
+- **Focus** — a 60-tick dial that empties as the session runs
+- **You** — the four-attribute radar, 26 weeks of consistency, rewards,
+  moments, milestones
 
 Habits and Rewards are opened from Today and You rather than being tabs. Old
 five-tab deep links and the saved "Open App To" preference still resolve.
@@ -107,4 +110,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.2 (build 6.2)
+6.3 (build 6.3)

@@ -107,11 +107,11 @@ struct MainTabView: View {
                 onOpenYou: { selectedTab = .you }
             )
         case .goals:
-            GlassworkBossesView()
+            SILGoalsView()
         case .focus:
-            GlassworkTrainingView()
+            SILFocusView()
         case .you:
-            GlassworkStatusView()
+            SILYouView()
         }
     }
 
