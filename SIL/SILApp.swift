@@ -18,8 +18,7 @@ struct SILApp: App {
     @StateObject private var gameEngine = GameEngine.shared
     @StateObject private var deepLinkManager = DeepLinkManager.shared
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @AppStorage("useSystemAppearance") private var useSystemAppearance = true
-    @AppStorage("preferDarkMode") private var preferDarkMode = true
+    @AppStorage(AppearancePreference.storageKey) private var appearanceRaw = AppearancePreference.system.rawValue
     @AppStorage("preferredLanguageCode") private var preferredLanguageCode = AppLanguage.system.rawValue
 
     // MARK: - Environment
@@ -27,6 +26,7 @@ struct SILApp: App {
     init() {
         // [SYSTEM]: Configure app defaults
         SettingsManager.shared.setDefaults()
+        AppearancePreference.migrateLegacyKeysIfNeeded()
         SystemTypography.ensureCustomFontRegistered()
         _ = CloudKitSyncManager.shared
         AnalyticsManager.shared.trackAppLaunch()
@@ -57,8 +57,7 @@ struct SILApp: App {
     }
 
     private var resolvedColorScheme: ColorScheme? {
-        guard !useSystemAppearance else { return nil }
-        return preferDarkMode ? .dark : .light
+        (AppearancePreference(rawValue: appearanceRaw) ?? .system).colorScheme
     }
 
     private var resolvedLocale: Locale {

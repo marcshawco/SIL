@@ -13,8 +13,38 @@ import UIKit
 
 // MARK: - Appearance preference
 
-enum AppearancePreference: String, Hashable {
+enum AppearancePreference: String, Hashable, CaseIterable {
     case system, light, dark
+
+    /// The key both the app root and Settings read. Keeping the name here
+    /// stops the two drifting apart again.
+    static let storageKey = "appearancePreference"
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light:  return .light
+        case .dark:   return .dark
+        }
+    }
+
+    /// Fold the pre-SIL pair of booleans into the single preference, once.
+    /// Installs that predate this have `useSystemAppearance` /
+    /// `preferDarkMode` set and no `appearancePreference`.
+    static func migrateLegacyKeysIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard defaults.string(forKey: storageKey) == nil else { return }
+
+        let resolved: AppearancePreference
+        if defaults.object(forKey: "useSystemAppearance") == nil {
+            resolved = .system
+        } else if defaults.bool(forKey: "useSystemAppearance") {
+            resolved = .system
+        } else {
+            resolved = defaults.bool(forKey: "preferDarkMode") ? .dark : .light
+        }
+        defaults.set(resolved.rawValue, forKey: storageKey)
+    }
 }
 
 // MARK: - Stat Row

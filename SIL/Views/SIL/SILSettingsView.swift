@@ -19,7 +19,7 @@ struct SILSettingsView: View {
     @ObservedObject private var appearance = SILAppearance.shared
     @ObservedObject private var iconModel = AppIconManager.shared
 
-    @AppStorage("appearancePreference") private var appearanceRaw: String = AppearancePreference.system.rawValue
+    @AppStorage(AppearancePreference.storageKey) private var appearanceRaw: String = AppearancePreference.system.rawValue
     @AppStorage("defaultTab") private var defaultTab: Int = 0
 
     @State private var haptics = SettingsManager.shared.hapticEnabled
