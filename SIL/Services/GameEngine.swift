@@ -1285,10 +1285,13 @@ class GameEngine: ObservableObject {
 
     private func applyDeathConsequences(missedQuestCount: Int) -> DeathPenaltySummary {
         let previousRank = player.rank
-        let statLossRatio = statLossRatio(for: previousRank)
+        let settings = SettingsManager.shared
+        let statLossRatio = settings.recalibrationEasesAttributes
+            ? statLossRatio(for: previousRank)
+            : 0
 
         var statLosses: [DeathPenaltyStatLoss] = []
-        for type in StatType.allCases {
+        for type in StatType.allCases where statLossRatio > 0 {
             guard var stat = player.stats[type] else { continue }
             let before = stat.totalValue
 
@@ -1306,10 +1309,14 @@ class GameEngine: ObservableObject {
         }
 
         let goldBefore = player.gold
-        let goldLoss = goldBefore > 0 ? Int((Double(goldBefore) * 0.20).rounded(.up)) : 0
+        let goldLoss = settings.recalibrationCostsCredits && goldBefore > 0
+            ? Int((Double(goldBefore) * 0.20).rounded(.up))
+            : 0
         player.gold = max(0, goldBefore - goldLoss)
 
-        let demotionResult = demotePlayerRankByOne()
+        let demotionResult = settings.recalibrationDropsLevel
+            ? demotePlayerRankByOne()
+            : (newRank: previousRank, wasDemoted: false)
         player.currentHP = player.maxHP
 
         return DeathPenaltySummary(

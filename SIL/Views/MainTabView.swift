@@ -118,13 +118,13 @@ struct MainTabView: View {
     @ViewBuilder private func pushedView(for screen: SILPushedScreen) -> some View {
         switch screen {
         case .habits:
-            GlassworkQuestsView()
+            SILHabitsView()
         case .rewards:
             GlassworkShopView()
         case .compose:
             // The compose button creates a habit; goals are created from the
             // Goals tab, which has its own flow.
-            GlassworkQuestsView()
+            QuestFormSheet(mode: .add)
         }
     }
 

@@ -19,7 +19,8 @@ of the previous game-styled interface.
 | Component library (`SILComponents`) | Done |
 | Four-tab shell + Today screen | Done |
 | Goals / Focus / You screens rebuilt | Done |
-| Habits, Settings, onboarding, overlays, widgets | In progress |
+| Habits screen + Settings | Done |
+| Compose sheet, onboarding, overlays, widgets, watch | In progress |
 | Icon + brand asset distribution | Done |
 
 ## Project layout
@@ -72,6 +73,13 @@ Four destinations behind a floating tab bar, with a compose button beside it:
 Habits and Rewards are opened from Today and You rather than being tabs. Old
 five-tab deep links and the saved "Open App To" preference still resolve.
 
+## Recalibration
+
+Running out of momentum resets the meter rather than wiping history. What else
+it costs is yours to choose, in Settings → Momentum: drop one level, ease
+attributes back, give up 20% of credits. Each is a separate switch and the
+engine honours all three.
+
 ## Bundle identifiers
 
 - App: `marcshaw.SIL`
@@ -110,4 +118,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.3 (build 6.3)
+6.4 (build 6.4)

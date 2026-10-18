@@ -735,6 +735,29 @@ class SettingsManager {
         static let autoTrackHealthKit = "autoTrackHealthKit"
         static let autoTrackLocation = "autoTrackLocation"
         static let deathMechanicEnabled = "deathMechanicEnabled"
+        static let recalibrationDropsLevel = "recalibrationDropsLevel"
+        static let recalibrationEasesAttributes = "recalibrationEasesAttributes"
+        static let recalibrationCostsCredits = "recalibrationCostsCredits"
+    }
+
+    // MARK: - Recalibration
+    //
+    // What running out of momentum actually costs. SIL lets you choose: the
+    // reset always happens, but each consequence is yours to opt into.
+
+    var recalibrationDropsLevel: Bool {
+        get { UserDefaults.standard.bool(forKey: Keys.recalibrationDropsLevel) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.recalibrationDropsLevel) }
+    }
+
+    var recalibrationEasesAttributes: Bool {
+        get { UserDefaults.standard.bool(forKey: Keys.recalibrationEasesAttributes) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.recalibrationEasesAttributes) }
+    }
+
+    var recalibrationCostsCredits: Bool {
+        get { UserDefaults.standard.bool(forKey: Keys.recalibrationCostsCredits) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.recalibrationCostsCredits) }
     }
 
     // MARK: - Onboarding
@@ -859,7 +882,10 @@ class SettingsManager {
             Keys.streakAlertsEnabled: true,
             Keys.autoTrackHealthKit: false,  // Disabled by default - requires Info.plist setup
             Keys.autoTrackLocation: false,   // Disabled by default - requires Info.plist setup
-            Keys.deathMechanicEnabled: true
+            Keys.deathMechanicEnabled: true,
+            Keys.recalibrationDropsLevel: true,
+            Keys.recalibrationEasesAttributes: true,
+            Keys.recalibrationCostsCredits: true
         ]
 
         UserDefaults.standard.register(defaults: defaults)

@@ -14,7 +14,7 @@ import SwiftUI
 
 struct SILYouView: View {
     @EnvironmentObject private var gameEngine: GameEngine
-    @StateObject private var marketplace = MarketplaceManager.shared
+    @ObservedObject private var marketplace = MarketplaceManager.shared
 
     @AppStorage("sil.you.attributeShape") private var showsRadar: Bool = true
     @State private var showSettings = false
@@ -37,7 +37,7 @@ struct SILYouView: View {
             milestonesSection
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView()
+            SILSettingsView()
         }
     }
 

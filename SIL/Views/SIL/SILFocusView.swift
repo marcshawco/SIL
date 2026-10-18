@@ -15,7 +15,7 @@ import SwiftUI
 
 struct SILFocusView: View {
     @EnvironmentObject private var gameEngine: GameEngine
-    @StateObject private var training = TrainingManager.shared
+    @ObservedObject private var training = TrainingManager.shared
 
     @AppStorage("sil.focus.minutes") private var minutes: Int = 25
     @AppStorage("sil.focus.attribute") private var attributeRaw: String = SILAttribute.mind.rawValue
