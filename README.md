@@ -21,7 +21,9 @@ of the previous game-styled interface.
 | Goals / Focus / You screens rebuilt | Done |
 | Habits screen + Settings | Done |
 | Onboarding + completion / level-up / recalibration overlays | Done |
-| Compose sheet, widgets, watch app | In progress |
+| Compose sheet | Done |
+| Widgets + watch app restyled | Done |
+| Last Glasswork shims retired | In progress |
 | Icon + brand asset distribution | Done |
 
 ## Project layout
@@ -95,7 +97,8 @@ engine honours all three.
 - One accent, user-selectable: violet (default), orange, or mono
 - Type: Schibsted Grotesk 600 + Martian Mono 400. Those files are not bundled,
   so the app falls back to SF Pro and SF Mono; `S.display/text/mono` pick the
-  real faces up automatically if they are ever added
+  real faces up automatically if they are ever added. The old bundled "Good
+  Times" display face and its SIL FONT switch are gone
 - App icons: Ink (primary), Paper, Violet, Ember — same mark, different ground
 
 Tokens live in [`SIL/Design/SILTheme.swift`](SIL/Design/SILTheme.swift) under the
@@ -119,4 +122,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.5 (build 6.5)
+6.6 (build 6.6)

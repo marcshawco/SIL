@@ -149,12 +149,8 @@ struct MainTabView: View {
         switch screen {
         case .habits:
             SILHabitsView()
-        case .rewards:
-            GlassworkShopView()
         case .compose:
-            // The compose button creates a habit; goals are created from the
-            // Goals tab, which has its own flow.
-            QuestFormSheet(mode: .add)
+            SILComposeSheet(initialKind: selectedTab == .goals ? .goal : .habit)
         }
     }
 
@@ -166,7 +162,8 @@ struct MainTabView: View {
         case .training: selectedTab = .focus
         case .bosses:   selectedTab = .goals
         case .quests:   selectedTab = .today; pushedScreen = .habits
-        case .shop:     selectedTab = .you;   pushedScreen = .rewards
+        // Rewards are a section of You rather than a screen of their own.
+        case .shop:     selectedTab = .you
         }
     }
 
@@ -180,7 +177,7 @@ struct MainTabView: View {
 
 /// Screens reachable from a tab rather than being tabs themselves.
 enum SILPushedScreen: String, Identifiable {
-    case habits, rewards, compose
+    case habits, compose
 
     var id: String { rawValue }
 }

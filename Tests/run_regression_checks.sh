@@ -23,7 +23,7 @@ grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' "$ROOT/SIL/PrivacyInfo.xcpriv
 grep -q 'NSPrivacyAccessedAPICategoryUserDefaults' "$ROOT/SILWidgets/PrivacyInfo.xcprivacy" || fail "Widget privacy manifest missing UserDefaults required-reason declaration"
 
 APP_ICON_SUPPORT="$ROOT/SIL/Services/AppIconSupport.swift"
-APP_ICON_SETTINGS="$ROOT/SIL/Views/Settings/SettingsView.swift"
+APP_ICON_SETTINGS="$ROOT/SIL/Design/AppearanceSupport.swift"
 APP_ICON_NAMES=(
   AppIconPaper
   AppIconViolet

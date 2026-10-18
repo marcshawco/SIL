@@ -164,120 +164,24 @@ extension UIColor {
 // MARK: - Typography
 
 /// System fonts - Monospace for stats, Sans-serif for content
+/// Type roles for the screens that still read through this table. Everything
+/// forwards to the SIL roles in `S`; the bundled Good Times display face the
+/// old "SIL FONT" switch used is gone with the game styling.
 struct SystemTypography {
 
-    private static let customFontName = "GoodTimes-Regular"
-    private static let customFontFilename = "Good Times Rg"
-    private static let customFontExtension = "otf"
-    private static var hasRegisteredCustomFont = false
+    static func ensureCustomFontRegistered() {}
 
-    private static var useCustomAppFont: Bool {
-        SettingsManager.shared.useCustomAppFont
-    }
-
-    static func ensureCustomFontRegistered() {
-        guard hasRegisteredCustomFont == false else { return }
-        defer { hasRegisteredCustomFont = true }
-
-        guard let fontURL = Bundle.main.url(forResource: customFontFilename, withExtension: customFontExtension) else {
-            print("[SYSTEM] Missing bundled custom font: \(customFontFilename).\(customFontExtension)")
-            return
-        }
-
-        var registrationError: Unmanaged<CFError>?
-        let registered = CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, &registrationError)
-
-        if !registered,
-           let error = registrationError?.takeRetainedValue(),
-           CFErrorGetCode(error) != CTFontManagerError.alreadyRegistered.rawValue {
-            print("[SYSTEM] Failed to register custom font: \(error)")
-        }
-    }
-
-    private static func adjustedCustomFontSize(for baseSize: CGFloat) -> CGFloat {
-        let scale: CGFloat
-
-        switch baseSize {
-        case 30...:
-            scale = 0.76
-        case 24..<30:
-            scale = 0.8
-        case 18..<24:
-            scale = 0.84
-        case 15..<18:
-            scale = 0.82
-        case 12..<15:
-            scale = 0.78
-        case 10..<12:
-            scale = 0.74
-        default:
-            scale = 0.8
-        }
-
-        return max(8, (baseSize * scale).rounded(.toNearestOrAwayFromZero))
-    }
-
-    private static func textStyle(for size: CGFloat) -> Font.TextStyle {
-        switch size {
-        case 30...:
-            return .largeTitle
-        case 24..<30:
-            return .title
-        case 20..<24:
-            return .title2
-        case 17..<20:
-            return .headline
-        case 15..<17:
-            return .body
-        case 13..<15:
-            return .subheadline
-        case 11..<13:
-            return .caption
-        default:
-            return .caption2
-        }
-    }
-
-    private static func custom(_ size: CGFloat) -> Font {
-        ensureCustomFontRegistered()
-        let adjustedSize = adjustedCustomFontSize(for: size)
-        return .custom(customFontName, size: adjustedSize, relativeTo: textStyle(for: size))
-    }
-
-    static func uiFont(_ size: CGFloat, weight: UIFont.Weight = .regular, design: UIFontDescriptor.SystemDesign = .default) -> UIFont {
-        ensureCustomFontRegistered()
-        if useCustomAppFont, let font = UIFont(name: customFontName, size: adjustedCustomFontSize(for: size)) {
-            let textStyle: UIFont.TextStyle
-            switch size {
-            case 30...:
-                textStyle = .largeTitle
-            case 24..<30:
-                textStyle = .title1
-            case 20..<24:
-                textStyle = .title2
-            case 17..<20:
-                textStyle = .headline
-            case 15..<17:
-                textStyle = .body
-            case 13..<15:
-                textStyle = .subheadline
-            case 11..<13:
-                textStyle = .caption1
-            default:
-                textStyle = .caption2
-            }
-            return UIFontMetrics(forTextStyle: textStyle).scaledFont(for: font)
-        }
-
-        let baseFont = UIFont.systemFont(ofSize: size, weight: weight)
-        guard design != .default,
-              let descriptor = baseFont.fontDescriptor.withDesign(design) else {
-            return baseFont
-        }
+    static func uiFont(
+        _ size: CGFloat,
+        weight: UIFont.Weight = .regular,
+        design: UIFontDescriptor.SystemDesign = .default
+    ) -> UIFont {
+        let base = UIFont.systemFont(ofSize: size, weight: weight)
+        guard let descriptor = base.fontDescriptor.withDesign(design) else { return base }
         return UIFont(descriptor: descriptor, size: size)
     }
 
-    // MARK: - Monospace (Stats & Numbers)
+    // MARK: - Monospace (data and numerals)
 
     static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
         S.mono(size, weight)
@@ -294,7 +198,7 @@ struct SystemTypography {
     static var xpCounter: Font { mono(18, weight: .bold) }
     static var goldCounter: Font { mono(16, weight: .semibold) }
 
-    // MARK: - Sans-Serif (Content)
+    // MARK: - Sans-serif (content)
 
     static func sans(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
         S.text(size, weight)
@@ -311,7 +215,7 @@ struct SystemTypography {
     static var caption: Font { sans(13, weight: .regular) }
     static var captionSmall: Font { sans(11, weight: .regular) }
 
-    // MARK: - System Messages
+    // MARK: - System messages
 
     static var systemMessage: Font { mono(14, weight: .medium) }
     static var systemTitle: Font { mono(18, weight: .bold) }

@@ -1,5 +1,9 @@
 import SwiftUI
 
+//  The watch face of SIL. Monochrome like everything else — on a small, often
+//  glanced-at screen, hue carries no meaning the shape doesn't already give.
+//  `.cyan`, `.yellow`, `.red` and `.green` all become primary or secondary.
+
 struct WatchHomeView: View {
     @EnvironmentObject private var sessionStore: WatchSessionStore
 
@@ -14,9 +18,9 @@ struct WatchHomeView: View {
                                     Text(snapshot.playerName)
                                         .font(.headline)
                                     Spacer()
-                                    Text("Lv. \(snapshot.level)")
+                                    Text("Lvl \(snapshot.level)")
                                         .font(.subheadline.monospacedDigit())
-                                        .foregroundStyle(.cyan)
+                                        .foregroundStyle(.primary)
                                 }
 
                                 VStack(alignment: .leading, spacing: 4) {
@@ -24,31 +28,31 @@ struct WatchHomeView: View {
                                         value: Double(snapshot.currentXP),
                                         total: Double(max(snapshot.xpRequiredForNextLevel, 1))
                                     )
-                                    .tint(.cyan)
+                                    .tint(.primary)
 
-                                    Text("\(snapshot.currentXP)/\(snapshot.xpRequiredForNextLevel) XP")
+                                    Text("\(snapshot.currentXP)/\(snapshot.xpRequiredForNextLevel) progress")
                                         .font(.caption2.monospacedDigit())
                                         .foregroundStyle(.secondary)
                                 }
 
                                 HStack(spacing: 10) {
-                                    Label("\(snapshot.gold)", systemImage: "dollarsign.circle.fill")
+                                    Label("\(snapshot.gold) CR", systemImage: "circle.dotted")
                                         .font(.caption2.monospacedDigit())
-                                        .foregroundStyle(.yellow)
-                                    Label("\(snapshot.currentHP)/\(snapshot.maxHP)", systemImage: "heart.fill")
+                                        .foregroundStyle(.secondary)
+                                    Label("\(snapshot.currentHP)", systemImage: "chart.line.uptrend.xyaxis")
                                         .font(.caption2.monospacedDigit())
-                                        .foregroundStyle(.red)
+                                        .foregroundStyle(.secondary)
                                 }
 
-                                Text("\(snapshot.completedToday)/\(snapshot.totalQuests) quests complete today")
+                                Text("\(snapshot.completedToday) of \(snapshot.totalQuests) habits done today")
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
                         }
 
-                        Section("Quests") {
+                        Section("Habits") {
                             ForEach(snapshot.quests) { quest in
-                                WatchQuestRow(
+                                WatchHabitRow(
                                     quest: quest,
                                     isPending: sessionStore.pendingCompletionQuestIDs.contains(quest.id),
                                     onComplete: {
@@ -62,8 +66,8 @@ struct WatchHomeView: View {
                 } else {
                     VStack(spacing: 8) {
                         ProgressView()
-                            .tint(.cyan)
-                        Text("Waiting for quest sync")
+                            .tint(.primary)
+                        Text("Waiting for sync")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -105,7 +109,7 @@ struct WatchHomeView: View {
     }
 }
 
-private struct WatchQuestRow: View {
+private struct WatchHabitRow: View {
     let quest: WatchQuestSnapshotItem
     let isPending: Bool
     let onComplete: () -> Void
@@ -132,19 +136,19 @@ private struct WatchQuestRow: View {
 
             if quest.targetValue > 0 {
                 ProgressView(value: quest.progressFraction)
-                    .tint(quest.isCompleted ? .green : .cyan)
+                    .tint(quest.isCompleted ? .secondary : .primary)
                 Text(quest.progressText)
                     .font(.caption2.monospacedDigit())
-                    .foregroundStyle(quest.isCompleted ? .green : .secondary)
+                    .foregroundStyle(.secondary)
             }
 
             HStack(spacing: 8) {
-                Label("\(quest.xpReward)", systemImage: "star.fill")
+                Label("\(quest.xpReward)", systemImage: "plus")
                     .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.cyan)
-                Label("\(quest.goldReward)", systemImage: "dollarsign.circle.fill")
+                    .foregroundStyle(.secondary)
+                Label("\(quest.goldReward) CR", systemImage: "circle.dotted")
                     .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(.secondary)
                 Text(quest.trackingType.capitalized)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -157,17 +161,17 @@ private struct WatchQuestRow: View {
     private var completionControl: some View {
         if quest.isCompleted {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
+                .foregroundStyle(.primary)
         } else if isPending {
             ProgressView()
-                .tint(.cyan)
+                .tint(.primary)
                 .scaleEffect(0.75)
         } else {
             Button {
                 onComplete()
             } label: {
                 Image(systemName: "circle")
-                    .foregroundStyle(.cyan)
+                    .foregroundStyle(.primary)
             }
             .buttonStyle(.plain)
         }

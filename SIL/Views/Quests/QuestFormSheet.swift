@@ -260,7 +260,7 @@ struct QuestFormSheet: View {
                     }
                 }
                 .sheet(isPresented: $showCreateBossSheet) {
-                    BossFormSheet()
+                    SILComposeSheet(initialKind: .goal)
                 }
                 .alert(mode.isEditing ? "Unable to Save Quest" : "Unable to Create Quest", isPresented: Binding(
                     get: { errorMessage != nil },

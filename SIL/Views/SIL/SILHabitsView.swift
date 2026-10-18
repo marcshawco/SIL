@@ -117,7 +117,7 @@ struct SILHabitsView: View {
             .buttonStyle(.plain)
         }
         .sheet(isPresented: $showCreate) {
-            QuestFormSheet(mode: .add)
+            SILComposeSheet(initialKind: .habit)
         }
     }
 }
@@ -187,6 +187,8 @@ struct SILHabitCell: View {
     var isExpanded: Bool
     var onToggleExpand: () -> Void
 
+    @State private var showEdit = false
+
     private var done: Bool { habit.status == .completed }
 
     private var attribute: SILAttribute {
@@ -248,6 +250,9 @@ struct SILHabitCell: View {
                 )
         )
         .padding(.horizontal, -12)
+        .sheet(isPresented: $showEdit) {
+            QuestFormSheet(mode: .edit(habit))
+        }
     }
 
     // MARK: Expanded
@@ -307,9 +312,12 @@ struct SILHabitCell: View {
                 }
             }
 
-            if !done {
-                SILPrimaryButton(title: "Mark done") { complete() }
-                    .frame(height: 46)
+            HStack(spacing: 8) {
+                SILGhostButton(title: "Edit") { showEdit = true }
+                if !done {
+                    SILPrimaryButton(title: "Mark done") { complete() }
+                        .frame(height: 46)
+                }
             }
         }
         .padding(.top, 6)

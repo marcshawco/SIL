@@ -20,7 +20,6 @@ struct SILApp: App {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("useSystemAppearance") private var useSystemAppearance = true
     @AppStorage("preferDarkMode") private var preferDarkMode = true
-    @AppStorage("useCustomAppFont") private var useCustomAppFont = false
     @AppStorage("preferredLanguageCode") private var preferredLanguageCode = AppLanguage.system.rawValue
 
     // MARK: - Environment
@@ -45,14 +44,11 @@ struct SILApp: App {
                 .environmentObject(deepLinkManager)
                 .preferredColorScheme(resolvedColorScheme)
                 .environment(\.locale, resolvedLocale)
-                .id("\(useCustomAppFont)-\(preferredLanguageCode)")
+                .id(preferredLanguageCode)
                 .onOpenURL { url in
                     deepLinkManager.handle(url)
                 }
                 .onAppear {
-                    configureAppearance()
-                }
-                .onChange(of: useCustomAppFont) { _, _ in
                     configureAppearance()
                 }
             // [SYSTEM]: NO permission bombing - permissions are requested

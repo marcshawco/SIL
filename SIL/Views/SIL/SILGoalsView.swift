@@ -79,7 +79,7 @@ struct SILGoalsView: View {
             .buttonStyle(.plain)
         }
         .sheet(isPresented: $showCreate) {
-            BossFormSheet()
+            SILComposeSheet(initialKind: .goal)
         }
         .sheet(item: $openGoal) { goal in
             SILGoalDetailView(goalID: goal.id)

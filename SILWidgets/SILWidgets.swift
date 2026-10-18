@@ -8,97 +8,81 @@ import WidgetKit
 import AppIntents
 import UIKit
 
+/// The SIL palette, mirrored for the widget target.
+///
+/// Widgets are a separate binary and cannot see `SILTheme.swift`, so the token
+/// values are repeated here. Keep them in step with `S` — the hexes are the
+/// same ones the app uses. The old names are kept so the widget views below
+/// did not all have to be rewritten at once; everything that used to carry a
+/// hue now resolves to ink.
+///
+/// Widgets stay monochrome. The accent lives in app `UserDefaults`, which the
+/// widget cannot read, and a Home Screen tile reads better in ink anyway.
 private enum WidgetTheme {
-    private static func uiColor(red: CGFloat, green: CGFloat, blue: CGFloat) -> UIColor {
-        UIColor(red: red / 255, green: green / 255, blue: blue / 255, alpha: 1)
-    }
-
-    private static func adaptiveColor(light: UIColor, dark: UIColor) -> Color {
-        Color(
-            UIColor { traits in
-                traits.userInterfaceStyle == .dark ? dark : light
-            }
+    private static func hex(_ value: UInt32) -> UIColor {
+        UIColor(
+            red: CGFloat((value >> 16) & 0xFF) / 255,
+            green: CGFloat((value >> 8) & 0xFF) / 255,
+            blue: CGFloat(value & 0xFF) / 255,
+            alpha: 1
         )
     }
 
-    static let backgroundPrimary = adaptiveColor(
-        light: uiColor(red: 244, green: 246, blue: 250),
-        dark: uiColor(red: 10, green: 10, blue: 15)
-    )
-    static let backgroundSecondary = adaptiveColor(
-        light: uiColor(red: 255, green: 255, blue: 255),
-        dark: uiColor(red: 18, green: 18, blue: 26)
-    )
-    static let backgroundTertiary = adaptiveColor(
-        light: uiColor(red: 233, green: 238, blue: 247),
-        dark: uiColor(red: 26, green: 26, blue: 46)
-    )
-    static let textPrimary = adaptiveColor(
-        light: uiColor(red: 17, green: 20, blue: 32),
-        dark: uiColor(red: 255, green: 255, blue: 255)
-    )
-    static let textSecondary = adaptiveColor(
-        light: uiColor(red: 73, green: 80, blue: 102),
-        dark: uiColor(red: 160, green: 160, blue: 176)
-    )
-    static let textTertiary = adaptiveColor(
-        light: uiColor(red: 122, green: 129, blue: 152),
-        dark: uiColor(red: 112, green: 112, blue: 132)
-    )
-    static let primaryBlue = adaptiveColor(
-        light: uiColor(red: 0, green: 119, blue: 182),
-        dark: uiColor(red: 76, green: 201, blue: 240)
-    )
-    static let primaryPurple = adaptiveColor(
-        light: uiColor(red: 90, green: 24, blue: 154),
-        dark: uiColor(red: 123, green: 44, blue: 191)
-    )
-    static let accentCyan = adaptiveColor(
-        light: uiColor(red: 0, green: 150, blue: 136),
-        dark: uiColor(red: 0, green: 245, blue: 212)
-    )
-    static let warningOrange = adaptiveColor(
-        light: uiColor(red: 214, green: 90, blue: 35),
-        dark: uiColor(red: 255, green: 107, blue: 53)
-    )
-    static let criticalRed = adaptiveColor(
-        light: uiColor(red: 203, green: 24, blue: 48),
-        dark: uiColor(red: 239, green: 35, blue: 60)
-    )
-    static let successGreen = adaptiveColor(
-        light: uiColor(red: 0, green: 135, blue: 102),
-        dark: uiColor(red: 6, green: 214, blue: 160)
-    )
-    static let gold = adaptiveColor(
-        light: uiColor(red: 172, green: 119, blue: 0),
-        dark: uiColor(red: 255, green: 215, blue: 0)
-    )
+    private static func adaptive(light: UInt32, dark: UInt32) -> Color {
+        Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark ? hex(dark) : hex(light)
+        })
+    }
 
+    private static func mono(light: Double, dark: Double) -> Color {
+        Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(white: 1, alpha: dark)
+                : UIColor(white: 0, alpha: light)
+        })
+    }
+
+    // Surfaces
+    static let backgroundPrimary   = adaptive(light: 0xEDEDEB, dark: 0x0A0A0C)
+    static let backgroundSecondary = adaptive(light: 0xF8F8F7, dark: 0x16161A)
+    static let backgroundTertiary  = adaptive(light: 0xE1E1DF, dark: 0x222227)
+
+    // Ink
+    static let textPrimary   = adaptive(light: 0x0E0E10, dark: 0xF4F4F5)
+    static let textSecondary = adaptive(light: 0x52525A, dark: 0xA6A6AE)
+    static let textTertiary  = adaptive(light: 0x66666E, dark: 0x84848D)
+
+    static let line = mono(light: 0.06, dark: 0.07)
+    static let track = mono(light: 0.13, dark: 0.14)
+
+    // Former accents — all ink now, except the one loss state.
+    static let primaryBlue   = textPrimary
+    static let primaryPurple = textPrimary
+    static let accentCyan    = textPrimary
+    static let successGreen  = textPrimary
+    static let gold          = textPrimary
+    static let warningOrange = textSecondary
+    static let criticalRed   = adaptive(light: 0xB3401F, dark: 0xE2714E)
+
+    // Progress fills are flat ink on a hairline track, not two-stop ramps.
     static let xpGradient = LinearGradient(
-        colors: [primaryBlue, accentCyan],
+        colors: [textPrimary, textPrimary],
         startPoint: .leading,
         endPoint: .trailing
     )
 
     static let hpGradient = LinearGradient(
-        colors: [criticalRed, warningOrange],
+        colors: [textPrimary, textPrimary],
         startPoint: .leading,
         endPoint: .trailing
     )
 
-    static func cardBackground(accent: Color = primaryBlue) -> some View {
-        ZStack {
-            LinearGradient(
-                colors: [backgroundSecondary, backgroundPrimary],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            LinearGradient(
-                colors: [accent.opacity(0.28), primaryPurple.opacity(0.16), .clear],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
+    static func cardBackground(accent: Color = textPrimary) -> some View {
+        LinearGradient(
+            colors: [backgroundSecondary, backgroundPrimary],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 }
 
@@ -268,7 +252,7 @@ struct StatusWidgetView: View {
                     Text(entry.payload.playerName)
                         .font(.headline)
                         .lineLimit(1)
-                    Text("\(entry.payload.rank) Rank | Lv. \(entry.payload.level)")
+                    Text("Level \(entry.payload.level)")
                         .font(.caption)
                         .foregroundStyle(WidgetTheme.textSecondary)
                 }
@@ -297,7 +281,7 @@ struct StatusWidgetView: View {
 
             Spacer(minLength: 0)
 
-            Text("\(entry.payload.completedToday)/\(entry.payload.totalToday) quests complete")
+            Text("\(entry.payload.completedToday) of \(entry.payload.totalToday) habits done")
                 .font(.caption2)
                 .foregroundStyle(WidgetTheme.textSecondary)
         }
@@ -309,10 +293,10 @@ struct StatusWidgetView: View {
 
     private var accessoryBody: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("\(entry.payload.rank) Lv.\(entry.payload.level)")
+            Text("Level \(entry.payload.level)")
                 .font(.caption)
                 .bold()
-            Text("HP \(entry.payload.currentHP)/\(entry.payload.maxHP)")
+            Text("Momentum \(entry.payload.currentHP)")
                 .font(.caption2)
             Text("\(entry.payload.completedToday)/\(entry.payload.totalToday) done")
                 .font(.caption2)
@@ -336,7 +320,7 @@ struct StatusWidgetView: View {
     /// Lock screen circular: quest completion ring for today.
     private var circularAccessoryBody: some View {
         Gauge(value: Double(entry.payload.completedToday), in: 0...Double(max(1, entry.payload.totalToday))) {
-            Text("Lv.\(entry.payload.level)")
+            Text("Lvl \(entry.payload.level)")
                 .font(.system(size: 9, weight: .semibold))
         } currentValueLabel: {
             Text("\(entry.payload.completedToday)/\(entry.payload.totalToday)")
@@ -360,7 +344,7 @@ struct NextUpWidgetView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Next Up")
+                    Text("Next up")
                         .font(.headline)
                     Text("\(entry.payload.remainingRequired) required left")
                         .font(.caption)
@@ -378,7 +362,7 @@ struct NextUpWidgetView: View {
                             .font(.subheadline.bold())
                             .lineLimit(1)
                         if quest.isOptional {
-                            Text("OPTIONAL")
+                            Text("Optional")
                                 .font(.caption2.bold())
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
@@ -405,7 +389,7 @@ struct NextUpWidgetView: View {
 
             if displayedQuests.isEmpty {
                 Spacer()
-                Text("All clear. No unfinished quests right now.")
+                Text("Nothing left today. Rest is part of it.")
                     .font(.caption)
                     .foregroundStyle(WidgetTheme.textSecondary)
             }
@@ -501,13 +485,13 @@ struct BossWidgetView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Boss Battle")
+                    Text("Goal")
                         .font(.headline.weight(.semibold))
-                    Text("No active bosses")
+                    Text("No goals yet")
                         .font(.subheadline.bold())
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    Text("Create a boss to track long-term progress here.")
+                    Text("Add a goal to watch it move here.")
                         .font(.caption)
                         .foregroundStyle(WidgetTheme.textSecondary)
                         .lineLimit(2)
@@ -552,8 +536,8 @@ struct SILStatusWidget: Widget {
         StaticConfiguration(kind: kind, provider: SILTimelineProvider()) { entry in
             StatusWidgetView(entry: entry)
         }
-        .configurationDisplayName("Hunter Status")
-        .description("See level, HP, streak, gold, and today’s completion status at a glance.")
+        .configurationDisplayName("Momentum")
+        .description("Level, momentum, streak, credits and what is left today.")
         .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryCircular, .accessoryInline])
     }
 }
@@ -566,7 +550,7 @@ struct SILNextUpWidget: Widget {
             NextUpWidgetView(entry: entry)
         }
         .configurationDisplayName("Next Up")
-        .description("Shows the most important quests to tackle next based on urgency, rewards, and boss impact.")
+        .description("The habits worth doing next, by urgency and by what they move.")
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
@@ -578,8 +562,8 @@ struct SILBossWidget: Widget {
         AppIntentConfiguration(kind: kind, intent: BossWidgetConfigurationIntent.self, provider: SILBossTimelineProvider()) { entry in
             BossWidgetView(entry: entry)
         }
-        .configurationDisplayName("Boss Progress")
-        .description("Track a specific boss fight or let SIL choose the most urgent one.")
+        .configurationDisplayName("Goal progress")
+        .description("Follow one goal, or let SIL pick the one that needs you most.")
         .supportedFamilies([.systemMedium])
     }
 }

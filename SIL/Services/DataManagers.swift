@@ -726,7 +726,6 @@ class SettingsManager {
         static let preferredLanguageCode = "preferredLanguageCode"
         static let soundEnabled = "soundEnabled"
         static let hapticEnabled = "hapticEnabled"
-        static let useCustomAppFont = "useCustomAppFont"
         static let showQuestCompletionGrid = "showQuestCompletionGrid"
         static let showQuestNextUpSection = "showQuestNextUpSection"
         static let dailyReminderTime = "dailyReminderTime"
@@ -792,10 +791,6 @@ class SettingsManager {
         set { UserDefaults.standard.set(newValue, forKey: Keys.hapticEnabled) }
     }
 
-    var useCustomAppFont: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.useCustomAppFont) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.useCustomAppFont) }
-    }
 
     var showQuestCompletionGrid: Bool {
         get { UserDefaults.standard.bool(forKey: Keys.showQuestCompletionGrid) }
@@ -875,7 +870,6 @@ class SettingsManager {
             Keys.preferredLanguageCode: AppLanguage.system.rawValue,
             Keys.soundEnabled: true,
             Keys.hapticEnabled: true,
-            Keys.useCustomAppFont: false,
             Keys.showQuestCompletionGrid: true,
             Keys.showQuestNextUpSection: true,
             Keys.eveningReminderEnabled: true,
