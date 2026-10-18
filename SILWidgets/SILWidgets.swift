@@ -77,6 +77,30 @@ private enum WidgetTheme {
         endPoint: .trailing
     )
 
+    // MARK: Type
+    //
+    // The widget bundles Schibsted Grotesk (Regular/Medium/SemiBold) and
+    // Martian Mono Regular — the subset these tiles use. Lock Screen
+    // accessories keep the system face, which is what Apple renders them with.
+
+    private static func face(_ name: String, _ size: CGFloat, _ fallback: Font) -> Font {
+        UIFont(name: name, size: size) == nil ? fallback : .custom(name, size: size)
+    }
+
+    static func text(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        let name: String
+        switch weight {
+        case .semibold, .bold, .heavy, .black: name = "SchibstedGrotesk-SemiBold"
+        case .medium:                          name = "SchibstedGrotesk-Medium"
+        default:                               name = "SchibstedGrotesk-Regular"
+        }
+        return face(name, size, .system(size: size, weight: weight))
+    }
+
+    static func mono(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        face("MartianMono-Regular", size, .system(size: size, weight: weight, design: .monospaced))
+    }
+
     static func cardBackground(accent: Color = textPrimary) -> some View {
         LinearGradient(
             colors: [backgroundSecondary, backgroundPrimary],
@@ -250,39 +274,41 @@ struct StatusWidgetView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(entry.payload.playerName)
-                        .font(.headline)
+                        .font(WidgetTheme.text(17, .semibold))
                         .lineLimit(1)
                     Text("Level \(entry.payload.level)")
-                        .font(.caption)
+                        .font(WidgetTheme.text(12))
                         .foregroundStyle(WidgetTheme.textSecondary)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Label("\(entry.payload.streak)", systemImage: "flame.fill")
-                        .font(.caption)
-                        .foregroundStyle(WidgetTheme.warningOrange)
-                    Label("\(entry.payload.gold)", systemImage: "dollarsign.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(WidgetTheme.gold)
+                    Text("\(entry.payload.streak)d")
+                        .font(WidgetTheme.mono(11))
+                        .foregroundStyle(WidgetTheme.textSecondary)
+                    Text("\(entry.payload.gold) CR")
+                        .font(WidgetTheme.mono(11))
+                        .foregroundStyle(WidgetTheme.textSecondary)
                 }
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                metricRow(title: "HP", value: "\(entry.payload.currentHP)/\(entry.payload.maxHP)")
+                metricRow(title: "Momentum", value: "\(entry.payload.currentHP)")
                 ProgressView(value: Double(entry.payload.currentHP), total: Double(max(1, entry.payload.maxHP)))
-                    .tint(WidgetTheme.criticalRed)
+                    // Ink while the meter is healthy; the one warn colour only
+                    // once it is genuinely running down.
+                    .tint(momentumShare < 0.25 ? WidgetTheme.criticalRed : WidgetTheme.textPrimary)
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                metricRow(title: "XP", value: "\(Int((entry.payload.xpProgress * 100).rounded()))%")
+                metricRow(title: "Progress", value: "\(Int((entry.payload.xpProgress * 100).rounded()))%")
                 ProgressView(value: entry.payload.xpProgress)
-                    .tint(WidgetTheme.primaryBlue)
+                    .tint(WidgetTheme.textPrimary)
             }
 
             Spacer(minLength: 0)
 
             Text("\(entry.payload.completedToday) of \(entry.payload.totalToday) habits done")
-                .font(.caption2)
+                .font(WidgetTheme.text(11))
                 .foregroundStyle(WidgetTheme.textSecondary)
         }
         .foregroundStyle(WidgetTheme.textPrimary)
@@ -294,25 +320,29 @@ struct StatusWidgetView: View {
     private var accessoryBody: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Level \(entry.payload.level)")
-                .font(.caption)
+                .font(WidgetTheme.text(12))
                 .bold()
             Text("Momentum \(entry.payload.currentHP)")
-                .font(.caption2)
+                .font(WidgetTheme.text(11))
             Text("\(entry.payload.completedToday)/\(entry.payload.totalToday) done")
-                .font(.caption2)
+                .font(WidgetTheme.text(11))
                 .foregroundStyle(WidgetTheme.textSecondary)
         }
         .foregroundStyle(WidgetTheme.textPrimary)
     }
 
+    private var momentumShare: Double {
+        Double(entry.payload.currentHP) / Double(max(1, entry.payload.maxHP))
+    }
+
     private func metricRow(title: String, value: String) -> some View {
         HStack {
             Text(title)
-                .font(.caption2)
+                .font(WidgetTheme.text(11))
                 .foregroundStyle(WidgetTheme.textSecondary)
             Spacer()
             Text(value)
-                .font(.caption2)
+                .font(WidgetTheme.text(11))
                 .bold()
         }
     }
@@ -332,7 +362,7 @@ struct StatusWidgetView: View {
 
     /// Lock screen inline: one-line streak and quest summary.
     private var inlineAccessoryBody: some View {
-        Label("\(entry.payload.completedToday)/\(entry.payload.totalToday) quests • \(entry.payload.streak)d streak", systemImage: "flame.fill")
+        Text("\(entry.payload.completedToday)/\(entry.payload.totalToday) habits · \(entry.payload.streak)d streak")
     }
 }
 
@@ -345,25 +375,25 @@ struct NextUpWidgetView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Next up")
-                        .font(.headline)
+                        .font(WidgetTheme.text(17, .semibold))
                     Text("\(entry.payload.remainingRequired) required left")
-                        .font(.caption)
+                        .font(WidgetTheme.text(12))
                         .foregroundStyle(WidgetTheme.textSecondary)
                 }
                 Spacer()
                 Text("\(entry.payload.completedToday)/\(max(1, entry.payload.totalToday))")
-                    .font(.title3.monospacedDigit().bold())
+                    .font(WidgetTheme.mono(20, .medium))
             }
 
             ForEach(displayedQuests) { quest in
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(quest.title)
-                            .font(.subheadline.bold())
+                            .font(WidgetTheme.text(15, .semibold))
                             .lineLimit(1)
                         if quest.isOptional {
                             Text("Optional")
-                                .font(.caption2.bold())
+                                .font(WidgetTheme.text(11, .semibold))
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
                                 .foregroundStyle(WidgetTheme.accentCyan)
@@ -372,7 +402,7 @@ struct NextUpWidgetView: View {
                         }
                     }
                     Text(quest.subtitle)
-                        .font(.caption2)
+                        .font(WidgetTheme.text(11))
                         .foregroundStyle(WidgetTheme.textSecondary)
                         .lineLimit(1)
                     ProgressView(value: quest.progressValue)
@@ -382,7 +412,7 @@ struct NextUpWidgetView: View {
                         Spacer()
                         Text(relativeExpiry(for: quest.expiresAt))
                     }
-                    .font(.caption2)
+                    .font(WidgetTheme.text(11))
                     .foregroundStyle(WidgetTheme.textSecondary)
                 }
             }
@@ -390,7 +420,7 @@ struct NextUpWidgetView: View {
             if displayedQuests.isEmpty {
                 Spacer()
                 Text("Nothing left today. Rest is part of it.")
-                    .font(.caption)
+                    .font(WidgetTheme.text(12))
                     .foregroundStyle(WidgetTheme.textSecondary)
             }
         }
@@ -438,11 +468,11 @@ struct BossWidgetView: View {
                 HStack(alignment: .top, spacing: 8) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(boss.title)
-                            .font(.headline.weight(.semibold))
+                            .font(WidgetTheme.text(17, .semibold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.82)
                         Text(boss.subtitle)
-                            .font(.caption)
+                            .font(WidgetTheme.text(12))
                             .foregroundStyle(WidgetTheme.textSecondary)
                             .lineLimit(1)
                     }
@@ -450,7 +480,7 @@ struct BossWidgetView: View {
                     Spacer(minLength: 8)
 
                     Text("\(Int(boss.progressValue * 100))%")
-                        .font(.title3.monospacedDigit().bold())
+                        .font(WidgetTheme.mono(20, .medium))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                 }
@@ -474,11 +504,11 @@ struct BossWidgetView: View {
                 if let quest = entry.payload.nextUp.first {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text("Best next move")
-                            .font(.caption2)
+                            .font(WidgetTheme.text(11))
                             .foregroundStyle(WidgetTheme.textSecondary)
                             .lineLimit(1)
                         Text(quest.title)
-                            .font(.caption.bold())
+                            .font(WidgetTheme.text(12, .semibold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
@@ -486,13 +516,13 @@ struct BossWidgetView: View {
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Goal")
-                        .font(.headline.weight(.semibold))
+                        .font(WidgetTheme.text(17, .semibold))
                     Text("No goals yet")
-                        .font(.subheadline.bold())
+                        .font(WidgetTheme.text(15, .semibold))
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     Text("Add a goal to watch it move here.")
-                        .font(.caption)
+                        .font(WidgetTheme.text(12))
                         .foregroundStyle(WidgetTheme.textSecondary)
                         .lineLimit(2)
                 }
@@ -509,10 +539,10 @@ struct BossWidgetView: View {
     private func statPill(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.caption2)
+                .font(WidgetTheme.text(11))
                 .foregroundStyle(WidgetTheme.textSecondary)
             Text(value)
-                .font(.caption.bold())
+                .font(WidgetTheme.text(12, .semibold))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)

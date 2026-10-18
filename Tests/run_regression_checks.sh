@@ -78,7 +78,16 @@ for face in SchibstedGrotesk-Regular SchibstedGrotesk-Medium SchibstedGrotesk-Se
 done
 for licence in OFL-SchibstedGrotesk.txt OFL-MartianMono.txt; do
   [[ -f "$ROOT/SIL/Resources/Fonts/$licence" ]] || fail "Missing font licence $licence"
+  [[ -f "$ROOT/SILWidgets/Fonts/$licence" ]] || fail "Missing widget font licence $licence"
 done
+# The widget is a separate binary and bundles its own subset.
+for face in SchibstedGrotesk-Regular SchibstedGrotesk-Medium SchibstedGrotesk-SemiBold MartianMono-Regular; do
+  [[ -f "$ROOT/SILWidgets/Fonts/$face.ttf" ]] || fail "Missing widget font $face.ttf"
+  grep -Fq "$face.ttf" "$ROOT/SILWidgets-Info.plist" || fail "Widget font $face.ttf not registered"
+done
+if grep -qE '"(HP|XP)"|flame\.fill|dollarsign' "$ROOT/SILWidgets/SILWidgets.swift"; then
+  fail "Widget still carries game-era labels or icons"
+fi
 
 grep -q 'SILOnboardingView' "$ROOT/SIL/SILApp.swift" || fail "Onboarding flow missing from the root view"
 grep -Fq 'loadDailyQuests() ?? []' "$ROOT/SIL/Services/GameEngine.swift" || fail "GameEngine should not seed default quests"

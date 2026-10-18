@@ -120,8 +120,9 @@ redrawn on SIL surfaces, until the habit editor is rebuilt.
 - Leaving the app during a focus session still abandons it with a penalty,
   which sits awkwardly against the running screen's "ending early keeps
   partial credit". Kept from the GAMELIFE engine pending a decision.
-- The widgets and the watch app are restyled and build, but neither has been
-  checked on a screen.
+- The watch app is restyled and builds, but has not been seen running: no
+  watchOS simulator runtime is installed on this machine, and fetching one is
+  a multi-gigabyte download.
 
 Full asset inventory and usage rules: [`sil-logo-pack/README.md`](sil-logo-pack/README.md)
 
@@ -140,4 +141,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.12 (build 6.12)
+6.13 (build 6.13)

@@ -25,5 +25,12 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>SchibstedGrotesk-Regular.ttf</string>
+		<string>SchibstedGrotesk-Medium.ttf</string>
+		<string>SchibstedGrotesk-SemiBold.ttf</string>
+		<string>MartianMono-Regular.ttf</string>
+	</array>
 </dict>
 </plist>
