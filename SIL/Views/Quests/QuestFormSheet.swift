@@ -204,7 +204,7 @@ struct QuestFormSheet: View {
         let goldTotal = isOptionalQuest ? 0 : GameFormulas.questGold(difficulty: difficulty)
         let goldParts = (0..<count).map { distributedReward(goldTotal, index: $0, count: count) }
         let xpSummary = summarizedReward(parts: xpParts, suffix: "XP")
-        let goldSummary = goldTotal > 0 ? " and \(summarizedReward(parts: goldParts, suffix: "Gold"))" : ""
+        let goldSummary = goldTotal > 0 ? " and \(summarizedReward(parts: goldParts, suffix: "Credits"))" : ""
         return "Each step awards \(xpSummary)\(goldSummary), plus the same share of stat XP."
     }
 
@@ -501,7 +501,7 @@ struct QuestFormSheet: View {
 
                 Text(showValidationFeedback && !hasStats
                      ? "Select at least one stat — this is where completing the quest awards XP."
-                     : "Selected stats receive XP when this quest is completed.")
+                     : "These attributes grow when you close this habit.")
                     .font(GW.sans(11))
                     .foregroundStyle(showValidationFeedback && !hasStats ? GW.amber : GW.mute)
             }

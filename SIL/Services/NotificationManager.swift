@@ -323,7 +323,7 @@ class NotificationManager: NSObject, ObservableObject {
 
     private func questCompletionBody(title: String, xp: Int, gold: Int) -> String {
         if gold > 0 {
-            return localizedFormat("%@ finished. +%d XP, +%d Gold.", title, xp, gold)
+            return localizedFormat("%@ done. +%d progress, +%d CR.", title, xp, gold)
         }
         return localizedFormat("%@ done. +%d progress (optional, so no credits).", title, xp)
     }
@@ -376,7 +376,7 @@ class NotificationManager: NSObject, ObservableObject {
         }
 
         let content = UNMutableNotificationContent()
-        content.title = systemTitle(localized("Quest Reminder"))
+        content.title = systemTitle(localized("Habit reminder"))
         content.body = localizedFormat("Time to complete: %@", quest.title)
         content.sound = .default
         content.categoryIdentifier = questReminderCategoryIdentifier
@@ -594,13 +594,13 @@ class NotificationManager: NSObject, ObservableObject {
         if let urgentQuest {
             return (
                 title: systemTitle(localized("Your Momentum Window Is Open")),
-                body: localizedFormat("%@ is still waiting. A short session now keeps your streak and XP pipeline alive.", urgentQuest.title)
+                body: localizedFormat("%@ is still open. A short go at it now keeps the run alive.", urgentQuest.title)
             )
         }
 
         if let activeBoss {
             return (
-                title: systemTitle(localized("Boss Pressure Rising")),
+                title: systemTitle(localized("A goal needs you")),
                 body: localizedFormat("%@ is still standing. Log in and chip away before the system loses your rhythm.", activeBoss.title)
             )
         }
@@ -715,7 +715,7 @@ class NotificationManager: NSObject, ObservableObject {
     func sendLevelUpNotification(level: Int, rank: PlayerRank) {
         let content = UNMutableNotificationContent()
         content.title = localized("⬆️ LEVEL UP!")
-        content.body = localizedFormat("You have reached Level %d. Rank: %@", level, rank.title)
+        content.body = localizedFormat("You've moved up. Level %d.", level, rank.title)
         content.sound = .default
         content.categoryIdentifier = "LEVEL_UP"
 
@@ -734,8 +734,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send rank up notification (special version)
     func sendRankUpNotification(newRank: PlayerRank) {
         let content = UNMutableNotificationContent()
-        content.title = localized("🎖️ RANK UP!")
-        content.body = localizedFormat("You have achieved the rank of %@!", newRank.title)
+        content.title = localized("You've moved up")
+        content.body = localizedFormat("%@.", newRank.title)
         content.sound = UNNotificationSound.defaultCritical
         content.categoryIdentifier = "LEVEL_UP"
         content.interruptionLevel = .timeSensitive
@@ -754,8 +754,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Schedule notification for dungeon completion
     func scheduleDungeonEndNotification(in minutes: Int) {
         let content = UNMutableNotificationContent()
-        content.title = systemTitle(localized("DUNGEON CLEARED!"))
-        content.body = localized("You have conquered the dungeon. Claim your rewards.")
+        content.title = systemTitle(localized("Focus done"))
+        content.body = localized("Session finished. Your progress is banked.")
         content.sound = .default
         content.categoryIdentifier = "DUNGEON"
 
@@ -776,8 +776,8 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send dungeon cleared celebration
     func sendDungeonClearedNotification(dungeonName: String, xp: Int) {
         let content = UNMutableNotificationContent()
-        content.title = localized("🏰 DUNGEON CLEARED")
-        content.body = localizedFormat("%@ conquered! +%d XP earned.", dungeonName, xp)
+        content.title = localized("Focus done")
+        content.body = localizedFormat("%@ done. +%d progress.", dungeonName, xp)
         content.sound = .default
         content.categoryIdentifier = "DUNGEON"
 
@@ -802,7 +802,7 @@ class NotificationManager: NSObject, ObservableObject {
     /// Send boss defeated notification
     func sendBossDefeatedNotification(bossName: String) {
         let content = UNMutableNotificationContent()
-        content.title = localized("💀 BOSS DEFEATED")
+        content.title = localized("Goal reached")
         content.body = localizedFormat("You have slain %@! Epic rewards await.", bossName)
         content.sound = UNNotificationSound.defaultCritical
         content.categoryIdentifier = "BOSS_DEFEATED"
@@ -825,7 +825,7 @@ class NotificationManager: NSObject, ObservableObject {
         guard warningTime > Date() else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = localized("⚠️ BOSS DEADLINE APPROACHING")
+        content.title = localized("A goal is running out of time")
         content.body = localizedFormat("%@ must be defeated within 24 hours!", bossName)
         content.sound = .default
         content.categoryIdentifier = "BOSS_DEFEATED"
@@ -872,7 +872,7 @@ class NotificationManager: NSObject, ObservableObject {
 
         let content = UNMutableNotificationContent()
         content.title = localized("🔥 STREAK AT RISK")
-        content.body = localized("Complete your daily quests before midnight to maintain your streak!")
+        content.body = localized("Close today's habits before midnight to keep the run.")
         content.sound = UNNotificationSound.defaultCritical
         content.categoryIdentifier = "STREAK"
         content.interruptionLevel = .timeSensitive
@@ -897,7 +897,7 @@ class NotificationManager: NSObject, ObservableObject {
     func sendLocationArrivalNotification(location: TrackedLocation) {
         let content = UNMutableNotificationContent()
         content.title = systemTitle(localized("LOCATION DETECTED"))
-        content.body = localizedFormat("You have arrived at %@. Quest tracking active.", location.name)
+        content.body = localizedFormat("You're at %@. Tracking has started.", location.name)
         content.sound = .default
         content.categoryIdentifier = "LOCATION"
 

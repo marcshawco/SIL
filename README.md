@@ -113,16 +113,17 @@ redrawn on SIL surfaces, until the habit editor is rebuilt.
 
 ## Known gaps
 
-- The five translations (de, es, fr, it, ru) still carry game-era wording.
-  The string keys were renamed to SIL's vocabulary and the existing
-  translations carried across, so nothing is missing at runtime, but the
-  non-English copy says "Quest" and "Dungeon" and needs a human pass.
+- 26 strings still read in the old game vocabulary in German, Spanish,
+  French, Italian and Russian. The English was rewritten and the translations
+  carried across, so nothing is missing at runtime.
+  [`TRANSLATION-TODO.md`](TRANSLATION-TODO.md) lists each one with its current
+  text per language, plus the vocabulary table and the tone to write to.
 - Leaving the app during a focus session still abandons it with a penalty,
   which sits awkwardly against the running screen's "ending early keeps
   partial credit". Kept from the GAMELIFE engine pending a decision.
-- The watch app is restyled and builds, but has not been seen running: no
-  watchOS simulator runtime is installed on this machine, and fetching one is
-  a multi-gigabyte download.
+- The watch app runs and renders correctly in its empty state, but the
+  populated habit list has not been seen: WatchConnectivity does not come up
+  between paired simulators, and the store has no local cache to seed.
 
 Full asset inventory and usage rules: [`sil-logo-pack/README.md`](sil-logo-pack/README.md)
 
