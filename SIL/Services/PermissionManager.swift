@@ -2,7 +2,8 @@
 //  PermissionManager.swift
 //  SIL
 //
-//  [SYSTEM]: Neural Link status monitor active.
+//  Permission state for the three sources a habit can read: Apple Health,
+//  location and notifications. Nothing is requested until the user asks.
 //  System connections await your authorization.
 //
 
@@ -16,7 +17,7 @@ import UserNotifications
 // MARK: - Permission Manager
 
 /// Unified manager for all app permissions
-/// Follows the "Neural Link" approach - no permission bombing, user-initiated only
+/// Never asks on launch — every request comes from a tap on the Permissions screen.
 @MainActor
 class PermissionManager: ObservableObject {
 
@@ -247,31 +248,8 @@ class PermissionManager: ObservableObject {
         }
     }
 
-    // MARK: - Neural Link Names
-
-    func neuralLinkName(for permission: NeuralLinkType) -> String {
-        switch permission {
-        case .vitalSigns: return "Vital Signs"
-        case .worldPosition: return "World Position"
-        case .systemMessages: return "System Messages"
-        }
-    }
-
-    func neuralLinkDescription(for permission: NeuralLinkType) -> String {
-        switch permission {
-        case .vitalSigns: return "Connect to HealthKit for automatic progress tracking"
-        case .worldPosition: return "Connect to Location for geofence-based quests"
-        case .systemMessages: return "Receive alerts and quest reminders"
-        }
-    }
-
-    func neuralLinkIcon(for permission: NeuralLinkType) -> String {
-        switch permission {
-        case .vitalSigns: return "heart.fill"
-        case .worldPosition: return "location.fill"
-        case .systemMessages: return "bell.fill"
-        }
-    }
+    // The user-facing names for these live in `SILPermission`, beside the
+    // screen that shows them.
 
     func status(for permission: NeuralLinkType) -> PermissionStatus {
         switch permission {

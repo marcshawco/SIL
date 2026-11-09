@@ -59,7 +59,7 @@ struct BottomWheelValuePickerSheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(SystemTypography.titleSmall)
+                .font(S.text(22, .semibold))
                 .foregroundStyle(S.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
@@ -72,7 +72,7 @@ struct BottomWheelValuePickerSheet: View {
 
             if let subtitle, !subtitle.isEmpty {
                 Text(subtitle)
-                    .font(SystemTypography.caption)
+                    .font(S.text(13))
                     .foregroundStyle(S.ink2)
                     .lineLimit(1)
                     .minimumScaleFactor(0.62)
@@ -104,7 +104,7 @@ struct BottomWheelValuePickerSheet: View {
                 Spacer()
 
                 Text(confirmTitle)
-                    .font(SystemTypography.body)
+                    .font(S.text(17))
                     .foregroundStyle(S.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)

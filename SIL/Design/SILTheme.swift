@@ -294,6 +294,20 @@ enum S {
         return .custom(name, size: size)
     }
 
+    /// The same sans face as a `UIFont`, for the UIKit appearance proxies
+    /// (navigation and tab bars) that cannot take a SwiftUI `Font`.
+    static func uiSans(_ size: CGFloat, _ weight: UIFont.Weight = .regular) -> UIFont {
+        let swiftWeight: Font.Weight
+        switch weight {
+        case .bold, .heavy, .black: swiftWeight = .bold
+        case .semibold:             swiftWeight = .semibold
+        case .medium:               swiftWeight = .medium
+        default:                    swiftWeight = .regular
+        }
+        return UIFont(name: Face.sans(swiftWeight), size: size)
+            ?? UIFont.systemFont(ofSize: size, weight: weight)
+    }
+
     /// The letter-spacing the prototype applies to its display sizes.
     static func displayTracking(_ size: CGFloat) -> CGFloat {
         switch size {

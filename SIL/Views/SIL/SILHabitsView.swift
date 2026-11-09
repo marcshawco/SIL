@@ -251,7 +251,7 @@ struct SILHabitCell: View {
         )
         .padding(.horizontal, -12)
         .sheet(isPresented: $showEdit) {
-            QuestFormSheet(mode: .edit(habit))
+            SILHabitEditor(mode: .edit(habit))
         }
     }
 

@@ -27,7 +27,6 @@ struct SILApp: App {
         // [SYSTEM]: Configure app defaults
         SettingsManager.shared.setDefaults()
         AppearancePreference.migrateLegacyKeysIfNeeded()
-        SystemTypography.ensureCustomFontRegistered()
         _ = CloudKitSyncManager.shared
         AnalyticsManager.shared.trackAppLaunch()
 
@@ -67,39 +66,35 @@ struct SILApp: App {
     // MARK: - Configuration
 
     private func configureAppearance() {
-        // Configure navigation bar appearance — Glasswork velvet/ivory
-        // adaptive base. UIColor(SwiftUIColor) preserves the trait closure
-        // when the source Color is built from UIColor { traits in ... },
-        // so GW.bg drives both light and dark renders.
+        // Navigation and tab bars still show through on the few pushed
+        // screens. `UIColor(SwiftUIColor)` keeps the trait closure that `S`
+        // builds its tokens from, so these follow light and dark too.
         let navAppearance = UINavigationBarAppearance()
         navAppearance.configureWithOpaqueBackground()
-        navAppearance.backgroundColor = UIColor(GW.bg)
+        navAppearance.backgroundColor = UIColor(S.bg)
         navAppearance.titleTextAttributes = [
-            .foregroundColor: UIColor(GW.ink),
-            .font: SystemTypography.uiFont(17, weight: .bold, design: .monospaced)
+            .foregroundColor: UIColor(S.ink),
+            .font: S.uiSans(17, .semibold)
         ]
         navAppearance.largeTitleTextAttributes = [
-            .foregroundColor: UIColor(GW.cyan),
-            .font: SystemTypography.uiFont(34, weight: .bold, design: .monospaced)
+            .foregroundColor: UIColor(S.ink),
+            .font: S.uiSans(34, .bold)
         ]
 
         UINavigationBar.appearance().standardAppearance = navAppearance
         UINavigationBar.appearance().compactAppearance = navAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
 
-        // Configure tab bar appearance — use the raised Glasswork surface
-        // so the tab dock reads as part of the same material as the cards.
+        // The raised surface, so a system tab dock matches the cards.
         let tabAppearance = UITabBarAppearance()
         tabAppearance.configureWithOpaqueBackground()
-        tabAppearance.backgroundColor = UIColor(GW.bg2)
+        tabAppearance.backgroundColor = UIColor(S.bg2)
 
         UITabBar.appearance().standardAppearance = tabAppearance
         UITabBar.appearance().scrollEdgeAppearance = tabAppearance
 
-        // Make every UITableView (which backs SwiftUI Form/List) transparent
-        // so the Glasswork aurora reads through. Cells inherit clear too —
-        // each section appears as floating glass on the velvet/ivory base
-        // rather than a stark white card.
+        // Every UITableView (which backs SwiftUI Form and List) goes clear so
+        // the page ground reads through instead of a stark white card.
         UITableView.appearance().backgroundColor = .clear
         UITableViewCell.appearance().backgroundColor = .clear
         UICollectionView.appearance().backgroundColor = .clear

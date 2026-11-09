@@ -2,8 +2,8 @@
 //  PenaltyManager.swift
 //  SIL
 //
-//  [SYSTEM]: Penalty enforcement module activated.
-//  Failure has consequences, Hunter.
+//  Recalibration: what happens when momentum runs out, and the notice shown
+//  when it does. What it actually takes is set in Settings.
 //
 
 import Foundation
@@ -304,7 +304,7 @@ struct PenaltyZoneView: View {
                         .opacity(pulseAnimation ? 1.0 : 0.5)
 
                     Text("CATCH-UP")
-                        .font(SystemTypography.titleMedium)
+                        .font(S.text(28, .bold))
                         .foregroundStyle(S.warn)
 
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -321,7 +321,7 @@ struct PenaltyZoneView: View {
                 // Active penalties
                 VStack(alignment: .leading, spacing: 12) {
                     Text("COMPLETE THESE PENALTIES:")
-                        .font(SystemTypography.systemMessage)
+                        .font(S.mono(14, .medium))
                         .foregroundStyle(S.ink2)
 
                     ForEach(penaltyManager.activePenalties) { penalty in
@@ -331,18 +331,18 @@ struct PenaltyZoneView: View {
 
                 // Warning text
                 Text("Failure to complete penalties will result in severe stat reductions.")
-                    .font(SystemTypography.caption)
+                    .font(S.text(13))
                     .foregroundStyle(S.warn.opacity(0.8))
                     .multilineTextAlignment(.center)
             }
             .padding(24)
             .background(S.warn.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: SystemRadius.large))
+            .clipShape(RoundedRectangle(cornerRadius: S.R.small))
             .overlay(
-                RoundedRectangle(cornerRadius: SystemRadius.large)
+                RoundedRectangle(cornerRadius: S.R.small)
                     .stroke(S.warn, lineWidth: 2)
             )
-            .glow(color: S.warn.opacity(pulseAnimation ? 0.5 : 0.2), radius: 15)
+            .shadow(color: S.warn.opacity(pulseAnimation ? 0.5 : 0.2), radius: 15)
             .onAppear {
                 withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
                     pulseAnimation = true
@@ -362,11 +362,11 @@ struct TimeRemainingView: View {
     var body: some View {
         VStack(spacing: 4) {
             Text("TIME REMAINING")
-                .font(SystemTypography.captionSmall)
+                .font(S.text(11))
                 .foregroundStyle(S.ink3)
 
             Text(timeRemaining)
-                .font(SystemTypography.timerSmall)
+                .font(S.mono(32, .light))
                 .foregroundStyle(S.warn)
         }
         .onAppear {
@@ -410,12 +410,12 @@ struct PenaltyRowView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(penalty.title)
-                    .font(SystemTypography.headline)
+                    .font(S.text(17, .semibold))
                     .foregroundStyle(penalty.isCompleted ? S.ink3 : S.ink)
                     .strikethrough(penalty.isCompleted)
 
                 Text(penalty.description)
-                    .font(SystemTypography.caption)
+                    .font(S.text(13))
                     .foregroundStyle(S.ink2)
                     .lineLimit(2)
             }
@@ -429,7 +429,7 @@ struct PenaltyRowView: View {
                 Button("COMPLETE") {
                     // Handle completion
                 }
-                .font(SystemTypography.captionSmall)
+                .font(S.text(11))
                 .foregroundStyle(S.bg)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -439,7 +439,7 @@ struct PenaltyRowView: View {
         }
         .padding(12)
         .background(S.card)
-        .clipShape(RoundedRectangle(cornerRadius: SystemRadius.medium))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 

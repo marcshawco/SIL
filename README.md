@@ -24,6 +24,8 @@ of the previous game-styled interface.
 | Compose sheet | Done |
 | Widgets + watch app restyled | Done |
 | Glasswork + SystemTheme shims retired | Done |
+| Habit editor rebuilt (`SILHabitEditor`) | Done |
+| Permissions + Questions screens rebuilt | Done |
 | Copy sweep: notifications, titles, system messages | Done |
 | Localisation pass for the five translations | Outstanding |
 | Icon + brand asset distribution | Done |
@@ -85,6 +87,13 @@ it costs is yours to choose, in Settings → Momentum: drop one level, ease
 attributes back, give up 20% of credits. Each is a separate switch and the
 engine honours all three.
 
+## Focus
+
+A focus session has no failure state. The timer running out settles the whole
+reward; "End early" settles the share of the session actually spent; and
+leaving the app holds the clock rather than ending the session, so time away
+is neither credited nor punished. The GAMELIFE penalty path is gone.
+
 ## Bundle identifiers
 
 - App: `marcshaw.SIL`
@@ -107,9 +116,9 @@ engine honours all three.
 - App icons: Ink (primary), Paper, Violet, Ember — same mark, different ground
 
 Tokens live in [`SIL/Design/SILTheme.swift`](SIL/Design/SILTheme.swift) under the
-`S` namespace. Every screen reads `S` directly — the `GW` and `SystemTheme`
-shims are gone. Three Glasswork primitives survive in `GlassworkComponents`,
-redrawn on SIL surfaces, until the habit editor is rebuilt.
+`S` namespace. Every screen reads `S` directly: the `GW` shims, the
+`SystemTypography` / `SystemSpacing` / `SystemRadius` tables and the Glasswork
+primitives have all been deleted, along with the last screen that used them.
 
 ## Known gaps
 
@@ -118,9 +127,6 @@ redrawn on SIL surfaces, until the habit editor is rebuilt.
   carried across, so nothing is missing at runtime.
   [`TRANSLATION-TODO.md`](TRANSLATION-TODO.md) lists each one with its current
   text per language, plus the vocabulary table and the tone to write to.
-- Leaving the app during a focus session still abandons it with a penalty,
-  which sits awkwardly against the running screen's "ending early keeps
-  partial credit". Kept from the GAMELIFE engine pending a decision.
 - The watch app runs and renders correctly in its empty state, but the
   populated habit list has not been seen: WatchConnectivity does not come up
   between paired simulators, and the store has no local cache to seed.
@@ -142,4 +148,4 @@ bash Tests/run_regression_checks.sh
 
 ## Version
 
-6.13 (build 6.13)
+6.16 (build 6.16)

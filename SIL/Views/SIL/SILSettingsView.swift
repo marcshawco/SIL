@@ -66,12 +66,7 @@ struct SILSettingsView: View {
         }
         .sheet(isPresented: $showWidgets) { SILWidgetGalleryView() }
         .sheet(isPresented: $showPermissions) { PermissionManagerView() }
-        .sheet(isPresented: $showFAQ) {
-            NavigationStack {
-                ScrollView { FAQSection() }
-                    .background(S.bg)
-            }
-        }
+        .sheet(isPresented: $showFAQ) { SILQuestionsSheet() }
     }
 
     private var appVersion: String {
@@ -238,9 +233,7 @@ struct SILSettingsView: View {
                 SILListRow(title: "Location", detail: "Check in at the gym or the library") {
                     toggle($location) { SettingsManager.shared.autoTrackLocation = $0 }
                 }
-                SILListRow(title: "Permissions") {
-                    chevronButton { showPermissions = true }
-                }
+                disclosureRow("Permissions") { showPermissions = true }
             }
         }
     }
@@ -264,12 +257,8 @@ struct SILSettingsView: View {
                     .labelsHidden()
                     .tint(S.ink2)
                 }
-                SILListRow(title: "Widgets") {
-                    chevronButton { showWidgets = true }
-                }
-                SILListRow(title: "Questions") {
-                    chevronButton { showFAQ = true }
-                }
+                disclosureRow("Widgets") { showWidgets = true }
+                disclosureRow("Questions") { showFAQ = true }
             }
         }
     }
@@ -289,15 +278,19 @@ struct SILSettingsView: View {
         .toggleStyle(SILToggleStyle())
     }
 
-    private func chevronButton(_ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    /// A row that opens something. The whole row is the target — a chevron
+    /// the width of a thumbnail was not.
+    private func disclosureRow(_ title: String, action: @escaping () -> Void) -> some View {
+        SILListRow(title: title) {
             Image(systemName: "chevron.right")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(S.ink3)
-                .frame(width: 32, height: 44)
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            HapticManager.shared.selection()
+            action()
+        }
     }
 }
 
