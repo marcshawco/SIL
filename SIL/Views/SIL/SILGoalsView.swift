@@ -154,7 +154,7 @@ struct SILGoalReading {
             self.targetText = "100%"
 
             let perWeek = goal.damageDealtPercentage * 100 / elapsedWeeks
-            self.paceText = "\(Int(perWeek.rounded()))%"
+            self.paceText = "\(SILFormat.clampedInt(perWeek))%"
 
             let remainingPct = (1 - goal.damageDealtPercentage) * 100
             let weeksLeft = perWeek > 0.01 ? remainingPct / perWeek : .infinity
@@ -175,19 +175,23 @@ struct SILGoalReading {
 
     // MARK: Helpers
 
+    /// A goal target is typed by hand on a decimal pad, so it can be any
+    /// finite Double. Everything here goes through `SILFormat.clampedInt`
+    /// rather than `Int(_:)`, which traps outside `Int`'s range.
     private static func trim(_ value: Double) -> String {
         guard value.isFinite else { return "—" }
-        if abs(value) >= 1000 { return SILFormat.number(Int(value.rounded())) }
+        if abs(value) >= 1000 { return SILFormat.number(value) }
         return value == value.rounded()
-            ? String(Int(value.rounded()))
+            ? "\(SILFormat.clampedInt(value))"
             : String(format: "%.1f", value)
     }
 
     private static func etaShort(_ weeks: Double) -> String {
         guard weeks.isFinite, weeks > 0 else { return "no pace yet" }
         if weeks < 1.5 { return "~1 wk" }
-        if weeks < 9 { return "~\(Int(weeks.rounded())) wks" }
-        return "~\(Int((weeks / 4.345).rounded())) mo"
+        if weeks < 9 { return "~\(SILFormat.clampedInt(weeks)) wks" }
+        if weeks > 520 { return "no pace yet" }
+        return "~\(SILFormat.clampedInt(weeks / 4.345)) mo"
     }
 
     private static func etaLine(_ weeks: Double, remaining: Double, unit: String) -> String {
@@ -199,9 +203,12 @@ struct SILGoalReading {
             return "\(left) \(unit) to go — about a week at this pace"
         }
         if weeks < 9 {
-            return "\(left) \(unit) to go — about \(Int(weeks.rounded())) weeks at this pace"
+            return "\(left) \(unit) to go — about \(SILFormat.clampedInt(weeks)) weeks at this pace"
         }
-        return "\(left) \(unit) to go — about \(Int((weeks / 4.345).rounded())) months at this pace"
+        if weeks > 520 {
+            return "\(left) \(unit) to go — not enough pace to call it"
+        }
+        return "\(left) \(unit) to go — about \(SILFormat.clampedInt(weeks / 4.345)) months at this pace"
     }
 }
 

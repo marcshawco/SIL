@@ -2,7 +2,9 @@
 //  AppLanguage.swift
 //  SIL
 //
-//  [SYSTEM]: Localization matrix initialized.
+//  The in-app language picker, and the locale everything else resolves
+//  through. `SILApp` publishes `selected.locale` into the environment; code
+//  that formats outside a view body reads `AppLanguage.currentLocale`.
 //
 
 import Foundation
@@ -46,6 +48,20 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             return "Español"
         }
     }
+
+    /// The key `SILApp` and the settings screen both bind to.
+    static let storageKey = "preferredLanguageCode"
+
+    /// The language the user picked, or `.system`.
+    static var selected: AppLanguage {
+        let raw = UserDefaults.standard.string(forKey: storageKey) ?? AppLanguage.system.rawValue
+        return AppLanguage(rawValue: raw) ?? .system
+    }
+
+    /// The locale the app is running in. Formatters built outside a view body
+    /// must use this rather than `Locale.current`, which only knows the
+    /// device's language and so ignores the in-app picker.
+    static var currentLocale: Locale { selected.locale }
 
     var locale: Locale {
         if let localeIdentifier {

@@ -105,12 +105,74 @@ extension Player {
 // MARK: - Formatting
 
 enum SILFormat {
+
+    // MARK: Locale
+
+    /// Everything here formats through the in-app language, not the device's.
+    /// `Locale.current` would ignore the picker in Settings, which is how the
+    /// Today eyebrow ended up in English on a German build.
+    private static var locale: Locale { AppLanguage.currentLocale }
+
+    /// Formatters are expensive to build and these are called from view
+    /// bodies, so one of each is kept per locale and rebuilt when the
+    /// language changes.
+    private final class Cache {
+        static let shared = Cache()
+
+        private var localeID = ""
+        private var number = NumberFormatter()
+        private var date = DateFormatter()
+
+        private func sync(_ locale: Locale) {
+            guard locale.identifier != localeID else { return }
+            localeID = locale.identifier
+
+            let number = NumberFormatter()
+            number.locale = locale
+            number.numberStyle = .decimal
+            number.maximumFractionDigits = 0
+            self.number = number
+
+            let date = DateFormatter()
+            date.locale = locale
+            // A template, not a pattern: the locale decides the order of the
+            // day, the date and the month.
+            date.setLocalizedDateFormatFromTemplate("EEEdMMM")
+            self.date = date
+        }
+
+        func number(for locale: Locale) -> NumberFormatter {
+            sync(locale)
+            return number
+        }
+
+        func date(for locale: Locale) -> DateFormatter {
+            sync(locale)
+            return date
+        }
+    }
+
+    // MARK: Numbers
+
+    /// `Int(_: Double)` traps on anything outside `Int`'s range, and goal
+    /// targets are typed by hand, so they reach here as values like `1e20`.
+    /// Clamping keeps a silly number a silly number instead of a crash.
+    static func clampedInt(_ value: Double) -> Int {
+        guard value.isFinite else { return 0 }
+        let rounded = value.rounded()
+        if rounded >= 9.2e18 { return Int.max }
+        if rounded <= -9.2e18 { return Int.min }
+        return Int(rounded)
+    }
+
     /// Thousands separators, no decimals. Used for credits and goal values.
     static func number(_ value: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
+        Cache.shared.number(for: locale).string(from: NSNumber(value: value)) ?? "\(value)"
+    }
+
+    /// The same, for a value that may be out of `Int` range.
+    static func number(_ value: Double) -> String {
+        number(clampedInt(value))
     }
 
     /// Signed progress, as it appears beside a habit: `+12`.
@@ -125,13 +187,22 @@ enum SILFormat {
 
     /// Percentage with no decimals: `62%`.
     static func percent(_ share: Double) -> String {
-        "\(Int((max(0, min(1, share)) * 100).rounded()))%"
+        guard share.isFinite else { return "—" }
+        return "\(clampedInt(max(0, min(1, share)) * 100))%"
     }
 
-    /// `Wed 17 Oct`, the eyebrow above the Today title.
+    // MARK: Dates and clocks
+
+    /// `Wed 17 Oct`, the eyebrow above the Today title, in the app's language.
     static func dateShort(_ date: Date = Date()) -> String {
+        Cache.shared.date(for: locale).string(from: date)
+    }
+
+    /// `Oct`, the heading over a column of the dot calendar.
+    static func monthShort(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEE d MMM"
+        formatter.locale = locale
+        formatter.setLocalizedDateFormatFromTemplate("MMM")
         return formatter.string(from: date)
     }
 

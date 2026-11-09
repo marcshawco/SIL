@@ -39,6 +39,19 @@ struct SILComposeSheet: View {
     // Goal
     @State private var goalType: DynamicBossGoalType = .stepCount
     @State private var goalTarget = ""
+
+    /// Longest target the field accepts. A target has to be a number someone
+    /// could plausibly reach, and anything longer only produces goals that
+    /// read as noise.
+    private static let goalTargetMaxDigits = 12
+
+    /// The typed target, bounded. Clamping here keeps the stored goal inside a
+    /// range the Goals screen can format and the engine can divide by.
+    private var parsedGoalTarget: Double {
+        let cleaned = goalTarget.replacingOccurrences(of: ",", with: "")
+        guard let value = Double(cleaned), value.isFinite else { return 0 }
+        return min(max(0, value), 1_000_000_000)
+    }
     @State private var timeframe: SILTimeframe = .threeMonths
     @State private var goalAuto = true
 
@@ -49,7 +62,7 @@ struct SILComposeSheet: View {
     private var canSave: Bool {
         let named = !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         guard kind == .goal else { return named }
-        return named && (Double(goalTarget.replacingOccurrences(of: ",", with: "")) ?? 0) > 0
+        return named && parsedGoalTarget > 0
     }
 
     var body: some View {
@@ -289,6 +302,13 @@ struct SILComposeSheet: View {
             HStack(spacing: 12) {
                 TextField("0", text: $goalTarget)
                     .keyboardType(.decimalPad)
+                    .onChange(of: goalTarget) { _, new in
+                        // A target is a number someone has to actually reach,
+                        // so it is bounded here rather than letting a long
+                        // paste become an unreadable goal downstream.
+                        let kept = String(new.prefix(Self.goalTargetMaxDigits))
+                        if kept != new { goalTarget = kept }
+                    }
                     .font(S.display(28, .medium))
                     .tracking(S.displayTracking(28))
                     .foregroundStyle(S.ink)
@@ -374,7 +394,7 @@ struct SILComposeSheet: View {
                 NotificationManager.shared.scheduleQuestReminder(for: habit)
             }
         } else {
-            let target = Double(goalTarget.replacingOccurrences(of: ",", with: "")) ?? 0
+            let target = parsedGoalTarget
             let goal = DynamicBossGoal(
                 type: goalType,
                 startValue: 0,

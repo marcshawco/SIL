@@ -19,7 +19,7 @@ struct SILApp: App {
     @StateObject private var deepLinkManager = DeepLinkManager.shared
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage(AppearancePreference.storageKey) private var appearanceRaw = AppearancePreference.system.rawValue
-    @AppStorage("preferredLanguageCode") private var preferredLanguageCode = AppLanguage.system.rawValue
+    @AppStorage(AppLanguage.storageKey) private var preferredLanguageCode = AppLanguage.system.rawValue
 
     // MARK: - Environment
 

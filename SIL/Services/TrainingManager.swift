@@ -2,8 +2,8 @@
 //  TrainingManager.swift
 //  SIL
 //
-//  [SYSTEM]: Focus protocol initialized.
-//  Enter the training grounds, Hunter.
+//  Focus sessions: a countdown, a held state, and a settlement that pays for
+//  the time actually spent. There is no failure state — see `finish(share:)`.
 //
 
 import SwiftUI
@@ -11,8 +11,7 @@ import Combine
 
 // MARK: - Training Manager
 
-/// Manages focus/training sessions (formerly "Dungeon")
-/// Handles timer, focus mode, and session rewards
+/// Drives a focus session: the timer, the held state, and the rewards.
 @MainActor
 class TrainingManager: ObservableObject {
 
@@ -96,7 +95,6 @@ class TrainingManager: ObservableObject {
     func startSession(minutes: Int, title: String = "Focus") {
         guard !isActive else { return }
 
-        // [SYSTEM]: Training session initiated
         sessionTitle = title
         totalSeconds = minutes * 60
         elapsedSeconds = 0
@@ -115,7 +113,6 @@ class TrainingManager: ObservableObject {
             }
         }
 
-        // [SYSTEM]: Suggest enabling Do Not Disturb
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             SystemMessageHelper.showInfo(
                 "Focus running",
@@ -135,64 +132,64 @@ class TrainingManager: ObservableObject {
         }
     }
 
-    /// Complete the session successfully
+    /// Complete the session in full. Called by the timer when it runs out.
     func complete() {
+        finish(share: 1, fullRun: true)
+    }
+
+    /// End a running session before the timer is up. The reward is the share
+    /// of the session actually spent, so stopping is never a punishment — it
+    /// just pays less. This is what the Focus screen's "End early" does.
+    func endEarly() {
+        finish(share: progress, fullRun: false)
+    }
+
+    /// Settle a session and award `share` of its rewards.
+    ///
+    /// `share` is clamped to 0...1. A part-run still banks stat progress in
+    /// proportion, and still logs, so the day's history stays honest.
+    private func finish(share: Double, fullRun: Bool) {
         guard isActive else { return }
 
         // Stop timer
         timer?.invalidate()
         timer = nil
 
-        // Award rewards
-        let xp = xpReward
-        let gold = goldReward
+        let earnedShare = max(0, min(1, share))
+        let xp = Int((Double(xpReward) * earnedShare).rounded())
+        let gold = Int((Double(goldReward) * earnedShare).rounded())
+        let statXP = Int((20 * earnedShare).rounded())
+        let minutesSpent = max(0, elapsedSeconds / 60)
 
         // Update game state
         let engine = GameEngine.shared
-        _ = engine.awardXP(xp)
+        if xp > 0 { _ = engine.awardXP(xp) }
         engine.player.gold += gold
-        engine.player.dungeonsClearedCount += 1
-        engine.awardStatXP(focusStat, amount: 20)
+        if fullRun { engine.player.dungeonsClearedCount += 1 }
+        if statXP > 0 { engine.awardStatXP(focusStat, amount: statXP) }
         engine.recordExternalActivity(
             type: .questCompleted,
             title: sessionTitle,
             detail: "+\(xp) progress · +\(gold) CR"
         )
+        engine.save()
 
         // Show completion message
-        SystemMessageHelper.showInfo(
-            "Focus done",
-            "+\(xp) progress, +\(gold) CR."
-        )
-        AnalyticsManager.shared.trackFeature("training_session_completed")
-        HapticManager.shared.trainingCompleted()
-
-        // Reset state
-        isActive = false
-        isPaused = false
-        focusModeEnabled = false
-    }
-
-    /// Abandon the session early (applies penalty)
-    func abandon(
-        reason: PenaltyReason = .dungeonFailed,
-        warningMessage: String = "Focus session left early. Momentum took the hit."
-    ) {
-        guard isActive else { return }
-
-        // Stop timer
-        timer?.invalidate()
-        timer = nil
-
-        // Apply penalty
-        let engine = GameEngine.shared
-        engine.applyPenalty(reason: reason)
-        engine.save()
-        AnalyticsManager.shared.trackFeature("training_session_abandoned")
-
-        // Show warning
-        SystemMessageHelper.showWarning(warningMessage)
-        HapticManager.shared.trainingFailed()
+        if fullRun {
+            SystemMessageHelper.showInfo(
+                "Focus done",
+                "+\(xp) progress, +\(gold) CR."
+            )
+            AnalyticsManager.shared.trackFeature("training_session_completed")
+            HapticManager.shared.trainingCompleted()
+        } else {
+            SystemMessageHelper.showInfo(
+                "Focus ended early",
+                "\(minutesSpent) min in. +\(xp) progress, +\(gold) CR."
+            )
+            AnalyticsManager.shared.trackFeature("training_session_ended_early")
+            HapticManager.shared.success()
+        }
 
         // Reset state
         isActive = false
@@ -202,11 +199,18 @@ class TrainingManager: ObservableObject {
         totalSeconds = 0
     }
 
-    /// Fail the current training session when the app is backgrounded.
-    func failForAppExit() {
-        abandon(
-            reason: .dungeonFailed,
-            warningMessage: "You left the app before the timer ended, so the session ended early."
+    /// Hold the session when the app is backgrounded.
+    ///
+    /// Leaving the app is not a failure here: the clock stops so the time is
+    /// not credited, and the session is waiting when you come back. Nothing is
+    /// taken away — the only way to lose a session is to end it, and ending it
+    /// still pays for the part you did.
+    func holdForAppExit() {
+        guard isActive, !isPaused else { return }
+        pause()
+        SystemMessageHelper.showInfo(
+            "Focus held",
+            "The clock stopped when you left. Pick it up when you're back."
         )
     }
 

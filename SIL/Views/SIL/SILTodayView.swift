@@ -277,9 +277,6 @@ struct SILDotCalendar: View {
     private var months: [(name: String, days: [Date])] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM"
-
         return (0..<monthCount).reversed().compactMap { offset in
             guard
                 let monthStart = calendar.date(byAdding: .month, value: -offset, to: today),
@@ -290,7 +287,7 @@ struct SILDotCalendar: View {
             let days = range.compactMap {
                 calendar.date(byAdding: .day, value: $0 - 1, to: interval.start)
             }
-            return (formatter.string(from: monthStart), days)
+            return (SILFormat.monthShort(monthStart), days)
         }
     }
 

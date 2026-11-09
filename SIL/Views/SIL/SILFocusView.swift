@@ -8,7 +8,7 @@
 //  middle; you set the length, pick what it builds, name it, and start.
 //  Running, the same dial empties anticlockwise while the clock counts down.
 //  There is no dungeon, no raid, no failure state dressed up as a monster —
-//  ending early just keeps partial credit.
+//  ending early just pays for the minutes you actually sat down for.
 //
 
 import SwiftUI
@@ -37,10 +37,11 @@ struct SILFocusView: View {
             }
         }
         .onChange(of: phase) { _, newPhase in
-            // Leaving the app mid-session abandons it. Pausing first is the
-            // way out that keeps what you earned.
+            // Leaving the app holds the session rather than ending it. The
+            // clock stops, so the time away is not credited, and nothing is
+            // taken away either.
             if newPhase == .background && training.isActive && !training.isPaused {
-                training.failForAppExit()
+                training.holdForAppExit()
             }
         }
     }
@@ -151,7 +152,7 @@ struct SILFocusView: View {
             }
             Spacer()
             SILGhostButton(title: "End early", height: 44) {
-                training.complete()
+                training.endEarly()
             }
         }
         .padding(.top, 4)
@@ -196,7 +197,7 @@ struct SILFocusView: View {
                 Text(training.isPaused ? "Held" : "Running")
                     .font(S.text(17, .medium))
                     .foregroundStyle(S.ink)
-                Text("Ending early keeps partial credit")
+                Text("Ending early pays for the time you did")
                     .font(S.text(13))
                     .foregroundStyle(S.ink2)
             }
@@ -209,12 +210,14 @@ struct SILFocusView: View {
         )
     }
 
+    // These must match what `TrainingManager.finish(share:)` will actually
+    // pay, or the card promises one number and the banner shows another.
     private var earnedProgress: Int {
-        Int(Double(training.xpReward) * training.progress)
+        SILFormat.clampedInt(Double(training.xpReward) * training.progress)
     }
 
     private var earnedCredits: Int {
-        Int(Double(training.goldReward) * training.progress)
+        SILFormat.clampedInt(Double(training.goldReward) * training.progress)
     }
 
     private func earnedCard(_ label: String, _ value: String) -> some View {

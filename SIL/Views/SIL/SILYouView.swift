@@ -280,10 +280,16 @@ struct SILYouView: View {
 
     private func buy(_ reward: MarketplaceReward) {
         let result = marketplace.purchaseReward(reward, player: &gameEngine.player)
-        if result.success {
-            HapticManager.shared.success()
-            gameEngine.save()
+        guard result.success else {
+            // A reward can be affordable and still be refused — a momentum
+            // top-up when momentum is already full, for instance. Say so,
+            // or the tap looks like the app ignoring you.
+            SystemMessageHelper.showWarning(result.message)
+            return
         }
+        HapticManager.shared.success()
+        SystemMessageHelper.showInfo(reward.name, result.message)
+        gameEngine.save()
     }
 
     // MARK: - Moments

@@ -2,8 +2,8 @@
 //  MarketplaceManager.swift
 //  SIL
 //
-//  [SYSTEM]: Marketplace terminal initialized.
-//  Exchange your gold for real-world rewards.
+//  Rewards: credits earned in the app, spent on things in the real world.
+//  A few also act on the app's own state (momentum, streak cover, rest days).
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import Combine
 
 // MARK: - Marketplace Manager
 
-/// Manages the reward marketplace where players spend gold on real-life rewards
+/// The reward catalogue, and the credits spent against it.
 @MainActor
 class MarketplaceManager: ObservableObject {
 
@@ -37,7 +37,7 @@ class MarketplaceManager: ObservableObject {
     /// Load default marketplace rewards
     private func loadDefaultRewards() {
         availableRewards = [
-            // Small Rewards (10-50 Gold)
+            // Small (10-50 credits)
             MarketplaceReward(
                 name: "Extra Snack",
                 description: "Treat yourself to a snack of your choice.",
@@ -60,7 +60,7 @@ class MarketplaceManager: ObservableObject {
                 icon: "tv"
             ),
 
-            // Medium Rewards (50-200 Gold)
+            // Medium (50-200 credits)
             MarketplaceReward(
                 name: "Cheat Meal",
                 description: "Order your favorite food guilt-free.",
@@ -90,16 +90,16 @@ class MarketplaceManager: ObservableObject {
                 icon: "cup.and.saucer"
             ),
             MarketplaceReward(
-                name: "Health Potion",
-                description: "Restore +25 HP instantly.",
+                name: "Breather",
+                description: "Stop for a bit. Puts 25 back on your momentum.",
                 cost: 35,
                 category: .item,
-                icon: "cross.case.fill",
+                icon: "wind",
                 healthRestore: 25
             ),
             MarketplaceReward(
-                name: "Streak Shield",
-                description: "Protect your streak from one missed day.",
+                name: "Streak Cover",
+                description: "Covers one missed day so your run carries on.",
                 cost: 120,
                 category: .item,
                 icon: "shield.fill",
@@ -120,7 +120,7 @@ class MarketplaceManager: ObservableObject {
                 icon: "sofa.fill"
             ),
 
-            // Large Rewards (200-500 Gold)
+            // Large (200-500 credits)
             MarketplaceReward(
                 name: "Self-Care Day",
                 description: "Take a full day off for self-care.",
@@ -151,7 +151,7 @@ class MarketplaceManager: ObservableObject {
             ),
             MarketplaceReward(
                 name: "Rest Day Pass",
-                description: "A planned day off. Missed quests cost no HP and your streak stays safe.",
+                description: "A planned day off. Missed habits cost no momentum and your run stays intact.",
                 cost: 250,
                 category: .item,
                 icon: "moon.zzz.fill",
@@ -172,7 +172,7 @@ class MarketplaceManager: ObservableObject {
                 icon: "ticket"
             ),
 
-            // Premium Rewards (500+ Gold)
+            // Large one-offs (500+ credits)
             MarketplaceReward(
                 name: "Day Trip",
                 description: "Take a day trip somewhere fun.",
@@ -182,7 +182,7 @@ class MarketplaceManager: ObservableObject {
             ),
             MarketplaceReward(
                 name: "New Gear",
-                description: "Buy yourself a piece of equipment/gear you've been wanting.",
+                description: "Buy yourself that bit of kit you've been eyeing.",
                 cost: 1000,
                 category: .item,
                 icon: "bag"
@@ -203,7 +203,7 @@ class MarketplaceManager: ObservableObject {
             ),
             MarketplaceReward(
                 name: "Power Nap",
-                description: "20 guilt-free minutes face-down. Restores +20 HP and clears the head for the next quest.",
+                description: "20 guilt-free minutes face-down. Puts 20 back on your momentum.",
                 cost: 60,
                 category: .time,
                 icon: "moon.zzz",
@@ -222,7 +222,7 @@ class MarketplaceManager: ObservableObject {
             HapticManager.shared.purchaseFailed()
             return PurchaseResult(
                 success: false,
-                message: "Insufficient gold. You need \(reward.cost - player.gold) more."
+                message: "Not enough credits. You need \(reward.cost - player.gold) more."
             )
         }
 
@@ -231,7 +231,7 @@ class MarketplaceManager: ObservableObject {
             HapticManager.shared.warning()
             return PurchaseResult(
                 success: false,
-                message: "HP is already full. Use this when you need healing."
+                message: "Momentum is already full. Keep this for a day you need it."
             )
         }
 
@@ -265,8 +265,8 @@ class MarketplaceManager: ObservableObject {
                 type: .rewardConsumed,
                 title: reward.name,
                 detail: restoredAmount > 0
-                    ? "+\(restoredAmount) HP restored"
-                    : "HP already full"
+                    ? "+\(restoredAmount) momentum"
+                    : "Momentum already full"
             )
             GameEngine.shared.evaluateAchievementsIfNeeded()
             HapticManager.shared.purchaseSucceeded()
@@ -274,8 +274,8 @@ class MarketplaceManager: ObservableObject {
             return PurchaseResult(
                 success: true,
                 message: restoredAmount > 0
-                    ? "Health restored by \(restoredAmount) HP."
-                    : "HP is already full.",
+                    ? "+\(restoredAmount) momentum."
+                    : "Momentum is already full.",
                 purchase: purchase
             )
         }
@@ -293,14 +293,14 @@ class MarketplaceManager: ObservableObject {
             GameEngine.shared.recordExternalActivity(
                 type: .rewardConsumed,
                 title: reward.name,
-                detail: "+\(shieldCharges) streak protection charge"
+                detail: "+\(shieldCharges) streak cover"
             )
             GameEngine.shared.evaluateAchievementsIfNeeded()
             HapticManager.shared.purchaseSucceeded()
 
             return PurchaseResult(
                 success: true,
-                message: "Streak shield ready. Charges: \(player.streakShieldCharges).",
+                message: "Streak cover ready. You have \(player.streakShieldCharges).",
                 purchase: purchase
             )
         }
@@ -325,7 +325,7 @@ class MarketplaceManager: ObservableObject {
 
             return PurchaseResult(
                 success: true,
-                message: "Rest day pass ready. Passes: \(player.restDayPassCharges).",
+                message: "Rest day ready. You have \(player.restDayPassCharges).",
                 purchase: purchase
             )
         }
@@ -340,7 +340,7 @@ class MarketplaceManager: ObservableObject {
 
         return PurchaseResult(
             success: true,
-            message: "Reward purchased! Remember to redeem it.",
+            message: "Yours. Mark it claimed once you've taken it.",
             purchase: purchase
         )
     }
@@ -362,7 +362,7 @@ class MarketplaceManager: ObservableObject {
         GameEngine.shared.recordExternalActivity(
             type: .rewardConsumed,
             title: purchase.reward.name,
-            detail: "Shop reward redeemed"
+            detail: "Reward claimed"
         )
         AnalyticsManager.shared.trackFeature("shop_reward_redeemed")
         HapticManager.shared.rewardRedeemed()
