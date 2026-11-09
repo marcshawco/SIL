@@ -92,6 +92,7 @@ struct SILComposeSheet: View {
             }
         }
         .onAppear { kind = initialKind }
+        .silAppearance()
     }
 
     // MARK: - Chrome

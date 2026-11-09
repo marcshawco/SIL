@@ -151,6 +151,7 @@ struct SILHealthMetricSheet: View {
             .padding(.top, 24)
         }
         .presentationDragIndicator(.visible)
+        .silAppearance()
     }
 }
 

@@ -296,6 +296,7 @@ struct SILGoalDetailView: View {
                     .foregroundStyle(S.ink2)
             }
         }
+        .silAppearance()
     }
 
     @ViewBuilder private func content(for goal: BossFight) -> some View {

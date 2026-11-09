@@ -67,6 +67,7 @@ struct SILSettingsView: View {
         .sheet(isPresented: $showWidgets) { SILWidgetGalleryView() }
         .sheet(isPresented: $showPermissions) { PermissionManagerView() }
         .sheet(isPresented: $showFAQ) { SILQuestionsSheet() }
+        .silAppearance()
     }
 
     private var appVersion: String {
@@ -359,6 +360,7 @@ struct SILWidgetGalleryView: View {
                     )
             )
         }
+        .silAppearance()
     }
 
     private func widgetTile<Content: View>(@ViewBuilder content: () -> Content) -> some View {

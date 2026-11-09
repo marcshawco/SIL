@@ -161,6 +161,7 @@ struct SILHabitEditor: View {
             }
         }
         .keyboardDismissToolbar()
+        .silAppearance()
         .onAppear(perform: load)
         .onChange(of: tracking) { _, new in
             if new == .location && targetValue < 5 { targetValue = 45 }

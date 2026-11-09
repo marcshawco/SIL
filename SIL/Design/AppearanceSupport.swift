@@ -47,6 +47,30 @@ enum AppearancePreference: String, Hashable, CaseIterable {
     }
 }
 
+// MARK: - Sheets
+
+/// A sheet is its own hosting controller, so the `preferredColorScheme` the
+/// app root sets does not reach inside it — switching Light to Dark from the
+/// settings sheet left that sheet in the old theme until it was reopened.
+/// Every sheet root carries this instead.
+private struct SILAppearanceScheme: ViewModifier {
+    @AppStorage(AppearancePreference.storageKey) private var raw = AppearancePreference.system.rawValue
+
+    func body(content: Content) -> some View {
+        content.preferredColorScheme(
+            (AppearancePreference(rawValue: raw) ?? .system).colorScheme
+        )
+    }
+}
+
+extension View {
+    /// Applies the in-app appearance setting. Needed on the root of every
+    /// sheet and cover; the app root handles everything else.
+    func silAppearance() -> some View {
+        modifier(SILAppearanceScheme())
+    }
+}
+
 // MARK: - Stat Row
 
 // MARK: - Alternate app icons

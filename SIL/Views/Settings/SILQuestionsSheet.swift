@@ -111,6 +111,7 @@ struct SILQuestionsSheet: View {
             .padding(.horizontal, 20)
         }
         .presentationDragIndicator(.visible)
+        .silAppearance()
     }
 }
 

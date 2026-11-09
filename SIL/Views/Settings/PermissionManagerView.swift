@@ -48,6 +48,7 @@ struct PermissionManagerView: View {
                 .refreshable { await refresh() }
             }
         }
+        .silAppearance()
         .onAppear { Task { await refresh() } }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }

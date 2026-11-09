@@ -48,6 +48,7 @@ struct BottomWheelValuePickerSheet: View {
         }
         .presentationDetents([.fraction(0.5)])
         .presentationDragIndicator(.visible)
+        .silAppearance()
         .onAppear {
             draftValue = nearestValue(to: selection)
         }
